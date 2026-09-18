@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- 1. CSS File Link -->
+<link rel="stylesheet" href="style.css">
+
+<!-- 2. Main Game View (Lobby ke sath Board UI) -->
+<div id="game-container" class="container hidden">
+  <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
+    <!-- Chess Board -->
+    <div id="board" style="width: 450px;"></div>
+    
+    <!-- Game Status & Controls -->
+    <div class="card" style="width: 300px;">
+      <h3 id="game-status">Game Status</h3>
+      <div id="move-history" style="height: 200px; overflow-y: auto; margin: 15px 0;"></div>
+      <button onclick="backToLobby()" class="btn-logout" style="width: 100%;">Resign / Leave</button>
+    </div>
+  </div>
+</div>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chess Arena</title>
@@ -181,6 +198,12 @@
       alert("Sending challenge invitation...");
     }
   </script>
+<!-- Chess Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
 
+<!-- Aapka Logic File -->
+<script src="game.js"></script>
+</body>
 </body>
 </html>

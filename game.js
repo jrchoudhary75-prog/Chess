@@ -500,6 +500,11 @@ function executeEngineMove(bestMoveStr) {
     }, false);
 }
 
+function startChessGame() {
+  document.querySelector('.lobby-grid').classList.add('hidden');
+  document.getElementById('game-container').classList.remove('hidden');
+  // Board initialize logic (Board = Chessboard('board', config))
+}
 function checkGameEndConditions() {
     if (!hasAnyLegalMoves(turn)) {
         gameActive = false;
