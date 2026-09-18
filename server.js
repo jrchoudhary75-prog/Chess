@@ -2,15 +2,25 @@ const express = require('express');
 const mongoose = require('mongoose');
 const app = express();
 
-// Body Parser Middleware (ज़रूरी)
+// Body Parser Middleware
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// MongoDB Connection
-const MONGO_URI = process.env.MONGODB_URI || "YOUR_MONGODB_CONNECTION_STRING";
-mongoose.connect(MONGO_URI)
-  .then(() => console.log("MongoDB Connected"))
-  .catch(err => console.error("MongoDB Error:", err));
+// 1. Port Binding (Server ko pehle start karein taaki Render timeout na ho)
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+});
+
+// 2. Non-blocking MongoDB Connection
+const MONGO_URI = process.env.MONGODB_URI;
+if (MONGO_URI) {
+    mongoose.connect(MONGO_URI)
+      .then(() => console.log("MongoDB Connected"))
+      .catch(err => console.error("MongoDB Connection Error:", err.message));
+} else {
+    console.log("Warning: MONGODB_URI environment variable is missing.");
+}
 
 // User Schema
 const userSchema = new mongoose.Schema({
