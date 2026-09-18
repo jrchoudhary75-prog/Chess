@@ -2,9 +2,38 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chess Arena</title>
-  
-  <!-- Firebase Auth Setup -->
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #161512; color: #bababa; }
+    .hidden { display: none !important; }
+    
+    #auth-screen { position: fixed; inset: 0; background: #121212; display: flex; align-items: center; justify-content: center; z-index: 9999; }
+    .auth-card { background: #262421; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.6); max-width: 400px; width: 90%; }
+    .btn-google { padding: 12px 24px; background: #4285F4; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
+    .btn-google:hover { background: #3367d6; }
+
+    .navbar { display: flex; justify-content: space-between; align-items: center; background: #262421; padding: 12px 24px; border-bottom: 1px solid #363431; }
+    .profile-info { display: flex; align-items: center; gap: 12px; }
+    .avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #81b64c; object-fit: cover; }
+    .username { color: white; font-weight: 600; font-size: 16px; }
+    .btn-logout { background: #e53935; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; }
+
+    .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
+    .lobby-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .card { background: #262421; border-radius: 10px; padding: 24px; border: 1px solid #363431; }
+    .card h2 { color: white; margin-bottom: 12px; font-size: 20px; }
+    .card p { font-size: 14px; margin-bottom: 20px; color: #a0a0a0; }
+    
+    .btn-action { width: 100%; padding: 12px; background: #81b64c; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .btn-action:hover { background: #a3d168; }
+
+    .search-box { display: flex; gap: 8px; margin-top: 15px; }
+    .search-input { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #403d39; background: #1a1917; color: white; outline: none; }
+  </style>
+
+  <!-- Firebase Integration -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -22,7 +51,6 @@
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
 
-    // Auto Login Check on Page Load
     document.addEventListener('DOMContentLoaded', () => {
       const savedUser = localStorage.getItem('chessUser');
       if (savedUser) {
@@ -31,9 +59,9 @@
     });
 
     function showMainApp(user) {
-      document.getElementById('auth-screen').style.display = 'none';
-      document.getElementById('main-app').style.display = 'block';
-      document.getElementById('user-avatar').src = user.profilePic || '';
+      document.getElementById('auth-screen').classList.add('hidden');
+      document.getElementById('main-app').classList.remove('hidden');
+      document.getElementById('user-avatar').src = user.profilePic || 'https://via.placeholder.com/40';
       document.getElementById('user-display-name').innerText = user.name;
     }
 
@@ -56,7 +84,6 @@
         if (!res.ok) throw new Error("Backend Sync Failed");
 
         const dbUser = await res.json();
-        // Browser me user save karein (Bar-bar login se bachne ke liye)
         localStorage.setItem('chessUser', JSON.stringify(dbUser));
         showMainApp(dbUser);
       } catch (error) {
@@ -71,33 +98,89 @@
     };
   </script>
 </head>
-<body style="margin: 0; background-color: #161512; color: white; font-family: sans-serif;">
+<body>
 
-  <!-- 1. Google Login Screen (Pehle Dikhne Wali Screen) -->
-  <div id="auth-screen" style="display: flex; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #121212; z-index: 9999; justify-content: center; align-items: center;">
-    <div style="background: #262421; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
-      <h1 style="margin-bottom: 10px;">Chess Arena</h1>
-      <p style="color: #bababa; margin-bottom: 25px;">Sign in to play online and challenge friends</p>
-      <button onclick="loginWithGoogle()" style="padding: 12px 24px; background: #4285F4; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px;">
-        Sign in with Google
-      </button>
+  <!-- Google Login Screen -->
+  <div id="auth-screen">
+    <div class="auth-card">
+      <h1 style="color: white; margin-bottom: 10px;">Chess Arena</h1>
+      <p style="margin-bottom: 20px;">Sign in to track stats and challenge friends</p>
+      <button onclick="loginWithGoogle()" class="btn-google">Sign in with Google</button>
     </div>
   </div>
 
-  <!-- 2. Main Game Area (Logn hone ke baad hi dikhegi) -->
-  <div id="main-app" style="display: none;">
-    <!-- Top Profile Bar -->
-    <div style="display: flex; justify-content: space-between; align-items: center; background: #262421; padding: 10px 20px;">
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <img id="user-avatar" src="" style="width: 35px; height: 35px; border-radius: 50%; border: 1px solid #81b64c;">
-        <span id="user-display-name" style="font-weight: bold;"></span>
+  <!-- Main Lobby -->
+  <div id="main-app" class="hidden">
+    <div class="navbar">
+      <div class="profile-info">
+        <img id="user-avatar" class="avatar" src="" alt="Profile">
+        <span id="user-display-name" class="username">Player</span>
       </div>
-      <button onclick="logoutUser()" style="background: #e53935; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Logout</button>
+      <button onclick="logoutUser()" class="btn-logout">Logout</button>
     </div>
 
-    <!-- Aapka Purana Game Arena Code Yahan Rahega -->
-    <!-- (Play with Bot, Play with Friend, Board UI etc.) -->
+    <div class="container">
+      <div class="lobby-grid">
+        
+        <!-- Play Bot -->
+        <div class="card">
+          <h2>Play vs Computer</h2>
+          <p>Practice tactics against AI.</p>
+          <button class="btn-action">Play with Bot</button>
+        </div>
+
+        <!-- Friend Search Card -->
+        <div class="card">
+          <h2>Play with Friend</h2>
+          <p>Search registered players by name to send a direct challenge.</p>
+          <div class="search-box">
+            <input type="text" id="friend-search-input" class="search-input" placeholder="Enter username...">
+            <button class="btn-action" style="width: auto; padding: 10px 16px;" onclick="searchFriend()">Search</button>
+          </div>
+          <div id="search-results" style="margin-top: 15px;"></div>
+        </div>
+
+      </div>
+    </div>
   </div>
+
+  <script>
+    async function searchFriend() {
+      const query = document.getElementById('friend-search-input').value.trim();
+      if (!query) return;
+      const resultsDiv = document.getElementById('search-results');
+      resultsDiv.innerHTML = "<p style='color:#aaa;'>Searching players...</p>";
+      
+      try {
+        const res = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`);
+        const users = await res.json();
+        
+        if (users.length === 0) {
+          resultsDiv.innerHTML = "<p style='color:#aaa;'>No player found.</p>";
+          return;
+        }
+
+        resultsDiv.innerHTML = users.map(u => `
+          <div style="display:flex; justify-content:space-between; align-items:center; background:#1a1917; padding:10px; border-radius:6px; margin-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <img src="${u.profilePic || ''}" style="width:32px; height:32px; border-radius:50%;">
+              <div style="text-align:left;">
+                <div style="color:white; font-size:14px; font-weight:bold;">${u.name}</div>
+                <div style="font-size:12px; color:#888;">Rating: ${u.rating || 1200}</div>
+              </div>
+            </div>
+            <button onclick="challengeUser('${u._id}')" style="background:#81b64c; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">Challenge</button>
+          </div>
+        `).join('');
+      } catch(err) {
+        resultsDiv.innerHTML = "<p style='color:#e53935;'>Error loading players.</p>";
+      }
+    }
+
+    function challengeUser(userId) {
+      alert("Sending challenge invitation...");
+    }
+  </script>
 
 </body>
 </html>

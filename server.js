@@ -32,6 +32,16 @@ const userSchema = new mongoose.Schema({
     isOnline: { type: Boolean, default: false }
 });
 const User = mongoose.model('User', userSchema);
+// Search User API
+app.get('/api/users/search', async (req, res) => {
+    try {
+        const query = req.query.q || '';
+        const users = await User.find({ name: { $regex: query, $options: 'i' } }).limit(10);
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // User Sync API Route
 app.post('/api/user/sync', async (req, res) => {

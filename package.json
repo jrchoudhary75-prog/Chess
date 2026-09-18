@@ -7,8 +7,10 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "@dataconnect/generated": "file:src/dataconnect-generated",
     "dotenv": "^18.0.0",
     "express": "^4.19.2",
+    "firebase": "^12.19.0",
     "mongoose": "^9.10.1",
     "socket.io": "^4.7.5"
   }
