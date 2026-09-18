@@ -5,6 +5,14 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
+const mongoose = require('mongoose');
+
+// MongoDB Connection
+const MONGO_URI = process.env.MONGODB_URI || "mongodb+srv://jrchoudhary75_db_user:p2ffwpFh4z0oaby7@cluster0.1uqynau.mongodb.net/?appName=Cluster0";
+
+mongoose.connect(MONGO_URI)
+    .then(() => console.log("MongoDB Connected Successfully"))
+    .catch(err => console.error("MongoDB Connection Error:", err));
 
 // Socket.io with CORS enabled for production hosting
 const io = new Server(server, {
