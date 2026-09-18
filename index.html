@@ -1,6 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <button onclick="loginWithGoogle()" class="btn-login">Login with Google</button>
+    <!-- Firebase Auth Setup -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBYTo_Flsgdj_3ktQ3FB704xgbTSppLpt0",
+    authDomain: "chess-arena-eb263.firebaseapp.com",
+    projectId: "chess-arena-eb263",
+    storageBucket: "chess-arena-eb263.firebasestorage.app",
+    messagingSenderId: "735495318337",
+    appId: "1:735495318337:web:0b1a3141c5b9d33b448fc0",
+    measurementId: "G-KYR804BMJ9"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  window.loginWithGoogle = async function() {
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      const res = await fetch('/api/user/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          googleId: user.uid,
+          name: user.displayName,
+          email: user.email,
+          profilePic: user.photoURL
+        })
+      });
+      
+      const dbUser = await res.json();
+      localStorage.setItem('chessUser', JSON.stringify(dbUser));
+      alert(`Welcome ${dbUser.name}!`);
+      location.reload();
+    } catch (error) {
+      console.error("Login Error:", error);
+      alert("Login failed: " + error.message);
+    }
+  };
+</script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <link rel="icon" href="data:,">
     <meta charset="UTF-8">
