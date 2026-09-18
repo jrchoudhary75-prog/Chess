@@ -1,168 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <button onclick="loginWithGoogle()" class="btn-login">Login with Google</button>
-    <!-- Firebase Auth Setup -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  <meta charset="UTF-8">
+  <title>Chess Arena</title>
+  
+  <!-- Firebase Auth Setup -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBYTo_Flsgdj_3ktQ3FB704xgbTSppLpt0",
-    authDomain: "chess-arena-eb263.firebaseapp.com",
-    projectId: "chess-arena-eb263",
-    storageBucket: "chess-arena-eb263.firebasestorage.app",
-    messagingSenderId: "735495318337",
-    appId: "1:735495318337:web:0b1a3141c5b9d33b448fc0",
-    measurementId: "G-KYR804BMJ9"
-  };
+    const firebaseConfig = {
+      apiKey: "AIzaSyBYTo_Flsgdj_3ktQ3FB704xgbTSppLpt0",
+      authDomain: "chess-arena-eb263.firebaseapp.com",
+      projectId: "chess-arena-eb263",
+      storageBucket: "chess-arena-eb263.firebasestorage.app",
+      messagingSenderId: "735495318337",
+      appId: "1:735495318337:web:0b1a3141c5b9d33b448fc0"
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const provider = new GoogleAuthProvider();
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
 
-  window.loginWithGoogle = async function() {
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      const res = await fetch('/api/user/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          googleId: user.uid,
-          name: user.displayName,
-          email: user.email,
-          profilePic: user.photoURL
-        })
-      });
-      
-      const dbUser = await res.json();
-      localStorage.setItem('chessUser', JSON.stringify(dbUser));
-      alert(`Welcome ${dbUser.name}!`);
-      location.reload();
-    } catch (error) {
-      console.error("Login Error:", error);
-      alert("Login failed: " + error.message);
+    // Auto Login Check on Page Load
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedUser = localStorage.getItem('chessUser');
+      if (savedUser) {
+        showMainApp(JSON.parse(savedUser));
+      }
+    });
+
+    function showMainApp(user) {
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('main-app').style.display = 'block';
+      document.getElementById('user-avatar').src = user.profilePic || '';
+      document.getElementById('user-display-name').innerText = user.name;
     }
-  };
-</script>
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <link rel="icon" href="data:,">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chess Arena - Professional Edition</title>
-    <link rel="stylesheet" href="style.css">
+
+    window.loginWithGoogle = async function() {
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        
+        const res = await fetch('/api/user/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            googleId: user.uid,
+            name: user.displayName,
+            email: user.email,
+            profilePic: user.photoURL
+          })
+        });
+
+        if (!res.ok) throw new Error("Backend Sync Failed");
+
+        const dbUser = await res.json();
+        // Browser me user save karein (Bar-bar login se bachne ke liye)
+        localStorage.setItem('chessUser', JSON.stringify(dbUser));
+        showMainApp(dbUser);
+      } catch (error) {
+        console.error("Login Error:", error);
+        alert("Login failed: " + error.message);
+      }
+    };
+
+    window.logoutUser = function() {
+      localStorage.removeItem('chessUser');
+      location.reload();
+    };
+  </script>
 </head>
-<body>
+<body style="margin: 0; background-color: #161512; color: white; font-family: sans-serif;">
 
-    <!-- Start Screen / Hero Section -->
-    <div id="startScreen" class="screen">
-        <div class="hero-card">
-            <h1>Chess Arena</h1>
-            <p>Play offline against Stockfish or challenge a friend online in real-time.</p>
-            
-            <button id="openModalBtn" class="primary-btn">Play with Bot</button>
+  <!-- 1. Google Login Screen (Pehle Dikhne Wali Screen) -->
+  <div id="auth-screen" style="display: flex; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #121212; z-index: 9999; justify-content: center; align-items: center;">
+    <div style="background: #262421; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
+      <h1 style="margin-bottom: 10px;">Chess Arena</h1>
+      <p style="color: #bababa; margin-bottom: 25px;">Sign in to play online and challenge friends</p>
+      <button onclick="loginWithGoogle()" style="padding: 12px 24px; background: #4285F4; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px;">
+        Sign in with Google
+      </button>
+    </div>
+  </div>
 
-            <!-- Friend Match Box -->
-            <div class="friend-match-box">
-                <button class="primary-btn" onclick="createPrivateGame()">Play with Friend (Create Room)</button>
-                <div style="display: flex; gap: 6px; margin-top: 6px;">
-                    <input type="text" id="roomCodeInput" placeholder="Enter Room Code">
-                    <button class="action-btn" onclick="joinPrivateGame()">Join</button>
-                </div>
-                <div id="roomStatusText" style="color: #88bc3c; font-size: 0.85rem; font-weight: 600; text-align: center; margin-top: 4px;"></div>
-            </div>
-        </div>
+  <!-- 2. Main Game Area (Logn hone ke baad hi dikhegi) -->
+  <div id="main-app" style="display: none;">
+    <!-- Top Profile Bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; background: #262421; padding: 10px 20px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <img id="user-avatar" src="" style="width: 35px; height: 35px; border-radius: 50%; border: 1px solid #81b64c;">
+        <span id="user-display-name" style="font-weight: bold;"></span>
+      </div>
+      <button onclick="logoutUser()" style="background: #e53935; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Logout</button>
     </div>
 
-    <!-- Game Screen -->
-    <div id="gameScreen" class="screen" style="display: none;">
-        <div class="game-container">
-            <!-- Board Area -->
-            <div class="board-area">
-                <!-- Opponent HUD -->
-                <div class="player-hud">
-                    <div class="player-info">
-                        <div class="dot-indicator bot-dot"></div>
-                        <span id="opponentNameText">Stockfish Bot</span>
-                    </div>
-                    <span class="rating-tag" id="botRatingBadge">2100</span>
-                </div>
+    <!-- Aapka Purana Game Arena Code Yahan Rahega -->
+    <!-- (Play with Bot, Play with Friend, Board UI etc.) -->
+  </div>
 
-                <!-- Chessboard Grid -->
-                <div id="chessboard" class="chessboard"></div>
-
-                <!-- Player HUD -->
-                <div class="player-hud">
-                    <div class="player-info">
-                        <div class="dot-indicator player-dot"></div>
-                        <span>You (Player)</span>
-                    </div>
-                    <span class="rating-tag">1500</span>
-                </div>
-            </div>
-
-            <!-- Sidebar / Controls -->
-            <div class="sidebar">
-                <div class="sidebar-header">
-                    <h3>Match Info</h3>
-                    <span id="statusText" class="status-badge">Turn: White</span>
-                </div>
-
-                <div class="move-history-container">
-                    <label style="font-size: 0.85rem; color: #888;">Move History</label>
-                    <div id="moveHistoryList" class="move-list"></div>
-                </div>
-
-                <div class="control-panel">
-                    <button class="action-btn" onclick="undoMove()">Undo</button>
-                    <button class="action-btn" onclick="requestHint()">Hint</button>
-                    <button class="action-btn danger-btn" onclick="resignGame()">Resign</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Rating & Color Selection Modal -->
-    <div id="ratingModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <h2>Game Options</h2>
-            
-            <!-- Color Selector -->
-            <div style="text-align: center; margin-bottom: 8px;">
-                <label style="color: #aaa; font-size: 0.85rem; display: block; margin-bottom: 6px;">Choose Your Piece Color:</label>
-                <div style="display: flex; gap: 8px; justify-content: center;">
-                    <button type="button" class="action-btn color-choice-btn active" data-color="white" onclick="setChosenColor('white')">♔ White</button>
-                    <button type="button" class="action-btn color-choice-btn" data-color="black" onclick="setChosenColor('black')">♚ Black</button>
-                    <button type="button" class="action-btn color-choice-btn" data-color="random" onclick="setChosenColor('random')">☯ Random</button>
-                </div>
-            </div>
-
-            <h2>Select Bot Strength</h2>
-            <div class="rating-grid">
-                <button class="rating-btn" data-rating="800">Beginner <strong>800 Elo</strong></button>
-                <button class="rating-btn" data-rating="1200">Intermediate <strong>1200 Elo</strong></button>
-                <button class="rating-btn" data-rating="1600">Advanced <strong>1600 Elo</strong></button>
-                <button class="rating-btn" data-rating="2100">Master <strong>2100 Elo</strong></button>
-            </div>
-            <button class="secondary-btn" onclick="closeModal()">Cancel</button>
-        </div>
-    </div>
-
-    <!-- Game Over Modal -->
-    <div id="gameOverModal" class="modal" style="display: none;">
-        <div class="modal-content" style="text-align: center;">
-            <h2 id="gameOverTitle">Game Over</h2>
-            <p id="gameOverMessage" style="color: #bbb;">Checkmate!</p>
-            <button class="primary-btn" onclick="playAgain()">Play Again</button>
-            <button class="secondary-btn" onclick="goHome()">Main Menu</button>
-        </div>
-    </div>
-
-    <!-- Correct Script Order -->
-    <script src="stockfish.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="game.js"></script>
 </body>
 </html>

@@ -1,75 +1,38 @@
 const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const path = require('path');
-
-const app = express();
-const server = http.createServer(app);
 const mongoose = require('mongoose');
+const app = express();
 
-// MongoDB Connection
-const MONGO_URI = process.env.MONGODB_URI || "mongodb+srv://jrchoudhary75_db_user:p2ffwpFh4z0oaby7@cluster0.1uqynau.mongodb.net/?appName=Cluster0";
-
-mongoose.connect(MONGO_URI)
-    .then(() => console.log("MongoDB Connected Successfully"))
-    .catch(err => console.error("MongoDB Connection Error:", err));
-
-// Socket.io with CORS enabled for production hosting
-const io = new Server(server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    }
-});
-
-// Static files (HTML, CSS, JS, Images, Stockfish) serve karne ke liye
+// Body Parser Middleware (ज़रूरी)
+app.use(express.json());
 app.use(express.static(__dirname));
 
-// Default Route
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+// MongoDB Connection
+const MONGO_URI = process.env.MONGODB_URI || "YOUR_MONGODB_CONNECTION_STRING";
+mongoose.connect(MONGO_URI)
+  .then(() => console.log("MongoDB Connected"))
+  .catch(err => console.error("MongoDB Error:", err));
+
+// User Schema
+const userSchema = new mongoose.Schema({
+    googleId: String,
+    name: String,
+    email: String,
+    profilePic: String,
+    rating: { type: Number, default: 1200 },
+    isOnline: { type: Boolean, default: false }
 });
+const User = mongoose.model('User', userSchema);
 
-// Socket.io Multiplayer Connection Logic
-io.on('connection', (socket) => {
-    console.log(`User connected: ${socket.id}`);
-
-    // 1. Create Room
-    socket.on('create-room', () => {
-        const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-        socket.join(roomId);
-        socket.emit('room-created', { roomId: roomId, color: 'white' });
-        console.log(`Room Created: ${roomId}`);
-    });
-
-    // 2. Join Room
-    socket.on('join-room', (roomId) => {
-        const room = io.sockets.adapter.rooms.get(roomId);
-        
-        if (room && room.size === 1) {
-            socket.join(roomId);
-            socket.to(roomId).emit('game-start', { roomId: roomId, color: 'white' });
-            socket.emit('game-start', { roomId: roomId, color: 'black' });
-            console.log(`User ${socket.id} joined room: ${roomId}`);
-        } else if (room && room.size >= 2) {
-            socket.emit('room-error', 'Room is already full!');
-        } else {
-            socket.emit('room-error', 'Invalid Room Code! Make sure Host created it first.');
+// User Sync API Route
+app.post('/api/user/sync', async (req, res) => {
+    try {
+        const { googleId, name, email, profilePic } = req.body;
+        let user = await User.findOne({ googleId });
+        if (!user) {
+            user = await User.create({ googleId, name, email, profilePic });
         }
-    });
-
-    // 3. Move Synchronization
-    socket.on('make-move', (data) => {
-        socket.to(data.roomId).emit('opp-move', data.move);
-    });
-
-    socket.on('disconnect', () => {
-        console.log(`User disconnected: ${socket.id}`);
-    });
-});
-
-// Render dwara assigned dynamic PORT ya default 5000
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-    console.log(`Chess Server running on port ${PORT}`);
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
