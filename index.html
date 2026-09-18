@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" href="data:,">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Arena - Professional Edition</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Start Screen / Hero Section -->
+    <div id="startScreen" class="screen">
+        <div class="hero-card">
+            <h1>Chess Arena</h1>
+            <p>Play offline against Stockfish or challenge a friend online in real-time.</p>
+            
+            <button id="openModalBtn" class="primary-btn">Play with Bot</button>
+
+            <!-- Friend Match Box -->
+            <div class="friend-match-box">
+                <button class="primary-btn" onclick="createPrivateGame()">Play with Friend (Create Room)</button>
+                <div style="display: flex; gap: 6px; margin-top: 6px;">
+                    <input type="text" id="roomCodeInput" placeholder="Enter Room Code">
+                    <button class="action-btn" onclick="joinPrivateGame()">Join</button>
+                </div>
+                <div id="roomStatusText" style="color: #88bc3c; font-size: 0.85rem; font-weight: 600; text-align: center; margin-top: 4px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" class="screen" style="display: none;">
+        <div class="game-container">
+            <!-- Board Area -->
+            <div class="board-area">
+                <!-- Opponent HUD -->
+                <div class="player-hud">
+                    <div class="player-info">
+                        <div class="dot-indicator bot-dot"></div>
+                        <span id="opponentNameText">Stockfish Bot</span>
+                    </div>
+                    <span class="rating-tag" id="botRatingBadge">2100</span>
+                </div>
+
+                <!-- Chessboard Grid -->
+                <div id="chessboard" class="chessboard"></div>
+
+                <!-- Player HUD -->
+                <div class="player-hud">
+                    <div class="player-info">
+                        <div class="dot-indicator player-dot"></div>
+                        <span>You (Player)</span>
+                    </div>
+                    <span class="rating-tag">1500</span>
+                </div>
+            </div>
+
+            <!-- Sidebar / Controls -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <h3>Match Info</h3>
+                    <span id="statusText" class="status-badge">Turn: White</span>
+                </div>
+
+                <div class="move-history-container">
+                    <label style="font-size: 0.85rem; color: #888;">Move History</label>
+                    <div id="moveHistoryList" class="move-list"></div>
+                </div>
+
+                <div class="control-panel">
+                    <button class="action-btn" onclick="undoMove()">Undo</button>
+                    <button class="action-btn" onclick="requestHint()">Hint</button>
+                    <button class="action-btn danger-btn" onclick="resignGame()">Resign</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rating & Color Selection Modal -->
+    <div id="ratingModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Game Options</h2>
+            
+            <!-- Color Selector -->
+            <div style="text-align: center; margin-bottom: 8px;">
+                <label style="color: #aaa; font-size: 0.85rem; display: block; margin-bottom: 6px;">Choose Your Piece Color:</label>
+                <div style="display: flex; gap: 8px; justify-content: center;">
+                    <button type="button" class="action-btn color-choice-btn active" data-color="white" onclick="setChosenColor('white')">♔ White</button>
+                    <button type="button" class="action-btn color-choice-btn" data-color="black" onclick="setChosenColor('black')">♚ Black</button>
+                    <button type="button" class="action-btn color-choice-btn" data-color="random" onclick="setChosenColor('random')">☯ Random</button>
+                </div>
+            </div>
+
+            <h2>Select Bot Strength</h2>
+            <div class="rating-grid">
+                <button class="rating-btn" data-rating="800">Beginner <strong>800 Elo</strong></button>
+                <button class="rating-btn" data-rating="1200">Intermediate <strong>1200 Elo</strong></button>
+                <button class="rating-btn" data-rating="1600">Advanced <strong>1600 Elo</strong></button>
+                <button class="rating-btn" data-rating="2100">Master <strong>2100 Elo</strong></button>
+            </div>
+            <button class="secondary-btn" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="gameOverModal" class="modal" style="display: none;">
+        <div class="modal-content" style="text-align: center;">
+            <h2 id="gameOverTitle">Game Over</h2>
+            <p id="gameOverMessage" style="color: #bbb;">Checkmate!</p>
+            <button class="primary-btn" onclick="playAgain()">Play Again</button>
+            <button class="secondary-btn" onclick="goHome()">Main Menu</button>
+        </div>
+    </div>
+
+    <!-- Correct Script Order -->
+    <script src="stockfish.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
