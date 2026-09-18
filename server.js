@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const app = express();
 
+app.use(express.static('public'));
 // Body Parser Middleware
 app.use(express.json());
 app.use(express.static(__dirname));
@@ -21,7 +22,7 @@ if (MONGO_URI) {
 } else {
     console.log("Warning: MONGODB_URI environment variable is missing.");
 }
-
+ 
 // User Schema
 const userSchema = new mongoose.Schema({
     googleId: String,

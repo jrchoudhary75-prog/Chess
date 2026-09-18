@@ -24,25 +24,35 @@ let gameMode = 'bot'; // 'bot' or 'friend'
 let myRoomId = null;
 
 function initStockfish() {
-    stockfish = new Worker('stockfish.js'); 
-    
-    stockfish.onmessage = function(event) {
-        let data = event.data;
-        if (typeof data === 'string' && data.includes('bestmove')) {
-            let match = data.match(/bestmove\s+(\S+)/);
-            if (match) {
-                let bestMove = match[1];
-                if (isHintActive) {
-                    showHintMove(bestMove);
-                    isHintActive = false;
-                } else {
-                    executeEngineMove(bestMove);
+    try {
+        stockfish = new Worker('stockfish.js'); 
+        
+        stockfish.onmessage = function(event) {
+            let data = event.data;
+            if (typeof data === 'string' && data.includes('bestmove')) {
+                let match = data.match(/bestmove\s+(\S+)/);
+                if (match) {
+                    let bestMove = match[1];
+                    if (isHintActive) {
+                        showHintMove(bestMove);
+                        isHintActive = false;
+                    } else {
+                        executeEngineMove(bestMove);
+                    }
                 }
             }
-        }
-    };
+        };
 
-    stockfish.postMessage('uci');
+        stockfish.onerror = function(err) {
+            console.warn('Stockfish worker failed to load. Fallback AI active.', err);
+            stockfish = null;
+        };
+
+        stockfish.postMessage('uci');
+    } catch(e) {
+        console.warn('Stockfish Worker not supported or missing. Fallback active.');
+        stockfish = null;
+    }
 }
 
 window.onload = function() {
@@ -54,13 +64,14 @@ function setupUI() {
     let openModalBtn = document.getElementById('openModalBtn');
     if (openModalBtn) {
         openModalBtn.onclick = () => {
-            document.getElementById('ratingModal').style.display = 'flex';
+            let modal = document.getElementById('ratingModal');
+            if (modal) modal.style.display = 'flex';
         };
     }
 
     document.querySelectorAll('.rating-btn').forEach(btn => {
         btn.onclick = function() {
-            selectedBotRating = parseInt(this.getAttribute('data-rating'));
+            selectedBotRating = parseInt(this.getAttribute('data-rating')) || 1600;
             gameMode = 'bot';
             
             // Set Player Color according to choice
@@ -70,9 +81,20 @@ function setupUI() {
                 playerColor = chosenColorChoice;
             }
 
-            document.getElementById('ratingModal').style.display = 'none';
-            document.getElementById('startScreen').style.display = 'none';
-            document.getElementById('gameScreen').style.display = 'flex';
+            let modal = document.getElementById('ratingModal');
+            if (modal) modal.style.display = 'none';
+
+            let startSc = document.getElementById('startScreen');
+            if (startSc) startSc.style.display = 'none';
+
+            let gameSc = document.getElementById('gameScreen');
+            if (gameSc) gameSc.style.display = 'flex';
+
+            let lobbyGrid = document.querySelector('.lobby-grid');
+            if (lobbyGrid) lobbyGrid.classList.add('hidden');
+
+            let gameContainer = document.getElementById('game-container');
+            if (gameContainer) gameContainer.classList.remove('hidden');
             
             let botBadge = document.getElementById('botRatingBadge');
             if (botBadge) botBadge.innerText = selectedBotRating;
@@ -110,6 +132,28 @@ function goHome() {
     if (gameScreen) gameScreen.style.display = 'none';
     let startScreen = document.getElementById('startScreen');
     if (startScreen) startScreen.style.display = 'flex';
+    let gameContainer = document.getElementById('game-container');
+    if (gameContainer) gameContainer.classList.add('hidden');
+    let lobbyGrid = document.querySelector('.lobby-grid');
+    if (lobbyGrid) lobbyGrid.classList.remove('hidden');
+}
+
+function startBotGame() {
+    let modal = document.getElementById('ratingModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    } else {
+        gameMode = 'bot';
+        let lobbyGrid = document.querySelector('.lobby-grid');
+        if (lobbyGrid) lobbyGrid.classList.add('hidden');
+        let gameContainer = document.getElementById('game-container');
+        if (gameContainer) gameContainer.classList.remove('hidden');
+        startGame();
+    }
+}
+
+function backToLobby() {
+    goHome();
 }
 
 function startGame() {
@@ -165,14 +209,14 @@ function playSound(type) {
 }
 
 function renderBoard() {
-    let boardEl = document.getElementById('chessboard');
+    let boardEl = document.getElementById('chessboard') || document.getElementById('board');
     if (!boardEl) return;
     boardEl.innerHTML = '';
 
     let whiteInCheck = isKingPosAttacked(board, 'white', 'black');
     let blackInCheck = isKingPosAttacked(board, 'black', 'white');
     
-    let statusText = document.getElementById('statusText');
+    let statusText = document.getElementById('statusText') || document.getElementById('game-status');
     if (statusText) {
         statusText.innerText = `Turn: ${turn.charAt(0).toUpperCase() + turn.slice(1)}`;
     }
@@ -277,7 +321,7 @@ function handleSquareClick(r, c) {
 
 function animateAndMakeMove(sr, sc, tr, tc, callback, isLocal = true) {
     isAnimating = true;
-    let boardEl = document.getElementById('chessboard');
+    let boardEl = document.getElementById('chessboard') || document.getElementById('board');
     let piece = board[sr][sc];
     let targetPiece = board[tr][tc];
     let isCastling = (piece.toLowerCase() === 'k' && Math.abs(tc - sc) === 2);
@@ -386,7 +430,7 @@ function executeMoveLogic(sr, sc, tr, tc) {
 }
 
 function updateMoveHistoryDisplay() {
-    let listEl = document.getElementById('moveHistoryList');
+    let listEl = document.getElementById('moveHistoryList') || document.getElementById('move-history');
     if (!listEl) return;
     listEl.innerHTML = '';
     for (let i = 0; i < historyLog.length; i += 2) {
@@ -440,7 +484,11 @@ function showGameOverModal(title, message) {
     let modalEl = document.getElementById('gameOverModal');
     if (titleEl) titleEl.innerText = title;
     if (msgEl) msgEl.innerText = message;
-    if (modalEl) modalEl.style.display = 'flex';
+    if (modalEl) {
+        modalEl.style.display = 'flex';
+    } else {
+        alert(`${title}: ${message}`);
+    }
 }
 
 function requestHint() {
@@ -460,10 +508,38 @@ function showHintMove(bestMoveStr) {
     renderBoard();
 }
 
+function triggerFallbackBotMove() {
+    if (!gameActive || gameMode !== 'bot') return;
+    let allMoves = [];
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            let piece = board[r][c];
+            if (piece && ((turn === 'white' && piece === piece.toUpperCase()) || (turn === 'black' && piece === piece.toLowerCase()))) {
+                let moves = getValidMoves(r, c);
+                for (let i = 0; i < moves.length; i++) {
+                    let m = moves[i];
+                    allMoves.push({ sr: r, sc: c, tr: m.row, tc: m.col });
+                }
+            }
+        }
+    }
+    if (allMoves.length > 0) {
+        let randomMove = allMoves[Math.floor(Math.random() * allMoves.length)];
+        animateAndMakeMove(randomMove.sr, randomMove.sc, randomMove.tr, randomMove.tc, function() {
+            checkGameEndConditions();
+        }, false);
+    }
+}
+
 // FIXED: Fast movetime based calculation so 1600 & 2100 Elo never freeze
 function triggerBotMove() {
-    if (!stockfish || !gameActive || gameMode !== 'bot') return;
+    if (!gameActive || gameMode !== 'bot') return;
     
+    if (!stockfish) {
+        setTimeout(triggerFallbackBotMove, 300);
+        return;
+    }
+
     let skillLevel = 20;
     let movetime = 1000;
 
@@ -501,10 +577,13 @@ function executeEngineMove(bestMoveStr) {
 }
 
 function startChessGame() {
-  document.querySelector('.lobby-grid').classList.add('hidden');
-  document.getElementById('game-container').classList.remove('hidden');
-  // Board initialize logic (Board = Chessboard('board', config))
+  let lobbyGrid = document.querySelector('.lobby-grid');
+  if (lobbyGrid) lobbyGrid.classList.add('hidden');
+  let gameContainer = document.getElementById('game-container');
+  if (gameContainer) gameContainer.classList.remove('hidden');
+  startGame();
 }
+
 function checkGameEndConditions() {
     if (!hasAnyLegalMoves(turn)) {
         gameActive = false;
@@ -732,7 +811,6 @@ function hasAnyLegalMoves(color) {
     return false;
 }
 
-// Online Private Room Logic
 // Online Private Room Logic
 function createPrivateGame() {
     if (!socket) return alert('Server Connection Lost! Run node server.js');
