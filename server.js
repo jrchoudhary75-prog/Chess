@@ -19,16 +19,23 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-
+// Storage for online users and rooms
 const connectedUsers = {}; // { userId: socket.id }
+const rooms = {};
 
+// Single Unified Socket.io Connection Handler
 io.on('connection', (socket) => {
-    // User registration
+    console.log('A user connected:', socket.id);
+
+    // 1. User registration for search & challenge
     socket.on('register-user', (userId) => {
-        connectedUsers[userId] = socket.id;
+        if (userId) {
+            connectedUsers[userId] = socket.id;
+            console.log(`User registered: ${userId} -> ${socket.id}`);
+        }
     });
 
-    // Friend search request
+    // 2. Friend search request
     socket.on('search-user', (searchId) => {
         if (connectedUsers[searchId]) {
             socket.emit('user-found', { userId: searchId, status: 'Online' });
@@ -37,23 +44,18 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Jab user disconnect ho jaye
-    socket.on('disconnect', () => {
-        for (let id in connectedUsers) {
-            if (connectedUsers[id] === socket.id) {
-                delete connectedUsers[id];
-                break;
-            }
+    // 3. Send Challenge to Friend
+    socket.on('send-challenge', (data) => {
+        let targetSocketId = connectedUsers[data.friendId];
+        if (targetSocketId) {
+            io.to(targetSocketId).emit('receive-challenge', {
+                fromUserId: data.myId,
+                roomId: data.roomId || null
+            });
         }
     });
-});
 
-// Socket.io Real-time Multiplayer Logic
-const rooms = {};
-
-io.on('connection', (socket) => {
-    console.log('A user connected:', socket.id);
-
+    // 4. Create Room
     socket.on('create-room', () => {
         const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
         rooms[roomId] = { p1: socket.id, p2: null };
@@ -61,6 +63,7 @@ io.on('connection', (socket) => {
         socket.emit('room-created', { roomId, color: 'white' });
     });
 
+    // 5. Join Room
     socket.on('join-room', (roomId) => {
         roomId = roomId.toUpperCase();
         if (rooms[roomId] && !rooms[roomId].p2) {
@@ -72,28 +75,25 @@ io.on('connection', (socket) => {
             socket.emit('room-error', 'Room not found or already full!');
         }
     });
-    // Server.js mein
-socket.on('send-challenge', (data) => {
-    let targetSocketId = connectedUsers[data.friendId];
-    if (targetSocketId) {
-        // Sirf ushi specific friend ko challenge bhejein
-        io.to(targetSocketId).emit('receive-challenge', {
-            fromUserId: data.myId,
-            roomId: data.roomId // agar room pehle se banaya hai
-        });
-    }
-});
 
+    // 6. Make Move
     socket.on('make-move', (data) => {
         socket.to(data.roomId).emit('opp-move', data.move);
     });
 
+    // 7. Disconnect Handler
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
+        for (let id in connectedUsers) {
+            if (connectedUsers[id] === socket.id) {
+                delete connectedUsers[id];
+                break;
+            }
+        }
     });
 });
 
-// Port Binding (Using server.listen instead of app.listen for Socket.io)
+// Port Binding
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
@@ -143,22 +143,4 @@ app.post('/api/user/sync', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
-});
-// Server.js mein
-const connectedUsers = {}; // { userId: socket.id }
-
-io.on('connection', (socket) => {
-    // Jab user login ya connect ho apni ID ke sath
-    socket.on('register-user', (userId) => {
-        connectedUsers[userId] = socket.id;
-    });
-
-    // Search user event
-    socket.on('search-user', (queryId) => {
-        if (connectedUsers[queryId]) {
-            socket.emit('user-found', { userId: queryId, status: 'Online' });
-        } else {
-            socket.emit('user-not-found');
-        }
-    });
 });
