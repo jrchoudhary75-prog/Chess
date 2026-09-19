@@ -43,6 +43,17 @@ io.on('connection', (socket) => {
             socket.emit('room-error', 'Room not found or already full!');
         }
     });
+    // Server.js mein
+socket.on('send-challenge', (data) => {
+    let targetSocketId = connectedUsers[data.friendId];
+    if (targetSocketId) {
+        // Sirf ushi specific friend ko challenge bhejein
+        io.to(targetSocketId).emit('receive-challenge', {
+            fromUserId: data.myId,
+            roomId: data.roomId // agar room pehle se banaya hai
+        });
+    }
+});
 
     socket.on('make-move', (data) => {
         socket.to(data.roomId).emit('opp-move', data.move);
@@ -103,4 +114,22 @@ app.post('/api/user/sync', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+// Server.js mein
+const connectedUsers = {}; // { userId: socket.id }
+
+io.on('connection', (socket) => {
+    // Jab user login ya connect ho apni ID ke sath
+    socket.on('register-user', (userId) => {
+        connectedUsers[userId] = socket.id;
+    });
+
+    // Search user event
+    socket.on('search-user', (queryId) => {
+        if (connectedUsers[queryId]) {
+            socket.emit('user-found', { userId: queryId, status: 'Online' });
+        } else {
+            socket.emit('user-not-found');
+        }
+    });
 });

@@ -847,3 +847,10 @@ if (socket) {
         alert(err);
     });
 }
+// Client-side (game_4.js)
+socket.on('receive-challenge', (data) => {
+    let confirmBox = confirm(`Aapko user ${data.fromUserId} se challenge aaya hai! Kya aap accept karna chahte hain?`);
+    if (confirmBox) {
+        socket.emit('accept-challenge', { fromUserId: data.fromUserId });
+    }
+});
