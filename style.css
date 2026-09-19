@@ -216,3 +216,11 @@ body {
     background: #a82020;
     color: white;
 }
+/* Chessboard container size fix */
+#board {
+    width: 100%;
+    max-width: 560px; /* Ya aapki pasand ka size */
+    aspect-ratio: 1 / 1; /* Board ko hamesha square rakhne ke liye */
+    background-color: #302e2b; /* Ek default dark color */
+    margin: 0 auto;
+}
