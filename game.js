@@ -59,7 +59,17 @@ window.onload = function() {
     initStockfish();
     setupUI();
 };
-
+// game_3.js ke andar ye code add karein
+window.startBotGame = function() {
+    console.log("Bot Game Started!");
+    
+    // Lobby ko hide karo aur Game Board ko show karo
+    document.querySelector('.lobby-grid').classList.add('hidden');
+    document.getElementById('game-container').classList.remove('hidden');
+    
+    // Yahan par aapka chess board load karne ka function call hoga
+    // Agar aapka board setup karne ka koi function hai (jaise initGame ya drawBoard), toh usko yahan call karein.
+};
 function setupUI() {
     let openModalBtn = document.getElementById('openModalBtn');
     if (openModalBtn) {
