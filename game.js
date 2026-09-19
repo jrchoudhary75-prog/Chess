@@ -258,7 +258,7 @@ function renderBoard() {
 }
 
 function getPieceImage(piece) {
-    const basePath = 'public/'; // Agar files public folder me hain
+    const basePath = '/public/'; // Agar files public folder me hain
     let map = {
         'P': 'wp.svg', 'N': 'wn.svg', 'B': 'wb.svg', 'R': 'wr.svg', 'Q': 'wq.svg', 'K': 'wk.svg',
         'p': 'bp.svg', 'n': 'bn.svg', 'b': 'bb.svg', 'r': 'br.svg', 'q': 'bq.svg', 'k': 'bk.svg'
