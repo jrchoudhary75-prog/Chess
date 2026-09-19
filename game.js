@@ -59,17 +59,7 @@ window.onload = function() {
     initStockfish();
     setupUI();
 };
-// game_3.js ke andar ye code add karein
-window.startBotGame = function() {
-    console.log("Bot Game Started!");
-    
-    // Lobby ko hide karo aur Game Board ko show karo
-    document.querySelector('.lobby-grid').classList.add('hidden');
-    document.getElementById('game-container').classList.remove('hidden');
-    
-    // Yahan par aapka chess board load karne ka function call hoga
-    // Agar aapka board setup karne ka koi function hai (jaise initGame ya drawBoard), toh usko yahan call karein.
-};
+
 function setupUI() {
     let openModalBtn = document.getElementById('openModalBtn');
     if (openModalBtn) {
@@ -148,6 +138,7 @@ function goHome() {
     if (lobbyGrid) lobbyGrid.classList.remove('hidden');
 }
 
+// Fixed startBotGame: Removed the duplicate definitions from top and bottom.
 function startBotGame() {
     let modal = document.getElementById('ratingModal');
     if (modal) {
@@ -279,7 +270,6 @@ function renderBoard() {
 }
 
 function getPieceImage(piece) {
-    // Apne folder ke hisab se path set karein (e.g., '/assets/' ya '/images/')
     const basePath = '/public/'; 
     let map = {
         'P': 'wp.svg', 'N': 'wn.svg', 'B': 'wb.svg', 'R': 'wr.svg', 'Q': 'wq.svg', 'K': 'wk.svg',
@@ -287,6 +277,7 @@ function getPieceImage(piece) {
     };
     return map[piece] ? basePath + map[piece] : '';
 }
+
 function handleSquareClick(r, c) {
     if (!gameActive || isAnimating || turn !== playerColor) return;
 
@@ -335,7 +326,6 @@ function animateAndMakeMove(sr, sc, tr, tc, callback, isLocal = true) {
     let boardEl = document.getElementById('chessboard') || document.getElementById('board');
     let piece = board[sr][sc];
     let targetPiece = board[tr][tc];
-    let isCastling = (piece.toLowerCase() === 'k' && Math.abs(tc - sc) === 2);
 
     playSound(targetPiece ? 'capture' : 'move');
 
@@ -542,7 +532,6 @@ function triggerFallbackBotMove() {
     }
 }
 
-// FIXED: Fast movetime based calculation so 1600 & 2100 Elo never freeze
 function triggerBotMove() {
     if (!gameActive || gameMode !== 'bot') return;
     
@@ -873,42 +862,3 @@ if (socket) {
         alert(err);
     });
 }
-// === UI Navigation & Game Load Functions ===
-
-window.startBotGame = function() {
-    console.log("Play with Bot clicked! Loading game UI...");
-    
-    // 1. Lobby ko hide karo
-    const lobby = document.querySelector('.lobby-grid');
-    if (lobby) {
-        lobby.classList.add('hidden');
-        lobby.style.display = 'none';
-    }
-    
-    // 2. Game UI ko show karo
-    const gameContainer = document.getElementById('game-container');
-    if (gameContainer) {
-        gameContainer.classList.remove('hidden');
-        gameContainer.style.display = 'block'; 
-    }
-    
-    // 3. THODA SA DELAY (100 milliseconds) TAKI UI PEHLE SCREEN PAR AA JAYE
-    setTimeout(() => {
-        console.log("Drawing board now...");
-        
-        // --- YAHAN AAPKO APNA ASLI FUNCTION DALNA HAI ---
-        
-        // AGAR aap Chessboard.js library use kar rahe hain aur board pehle se variable mein hai:
-        if (typeof board !== 'undefined' && typeof board.resize === 'function') {
-            board.resize(); // Board ko naye size ke hisaab se adjust kar dega
-        } 
-        else {
-            // Agar aapka koi specific function hai jo game start karta hai, toh usko yahan likhein:
-            // Udaharan:
-            // initGame(); 
-            // ya 
-            // board = Chessboard('board', config); 
-        }
-        
-    }, 100); // 100 miliseconds ka delay
-};
