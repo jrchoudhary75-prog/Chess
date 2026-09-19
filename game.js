@@ -476,6 +476,7 @@ function showGameOverModal(title, message) {
     if (titleEl) titleEl.innerText = title;
     if (msgEl) msgEl.innerText = message;
     if (modalEl) {
+        modalEl.classList.remove('hidden'); // Yeh hidden class ko hatayega
         modalEl.style.display = 'flex';
     } else {
         alert(`${title}: ${message}`);
@@ -818,20 +819,22 @@ if (socket) {
         if (statusText) statusText.innerText = `Room Code: ${myRoomId} (Share this with friend)`;
     });
 
-    socket.on('game-start', (data) => {
-        myRoomId = data.roomId;
-        gameMode = 'friend';
-        playerColor = data.color;
-        
-        let oppName = document.getElementById('opponentNameText');
-        if (oppName) oppName.innerText = "Friend (Online)";
+  socket.on('game-start', (data) => {
+    myRoomId = data.roomId;
+    gameMode = 'friend';
+    playerColor = data.color;
+    
+    let oppName = document.getElementById('opponentNameText');
+    if (oppName) oppName.innerText = "Friend (Online)";
 
-        let startScreen = document.getElementById('startScreen');
-        let gameScreen = document.getElementById('gameScreen');
-        if (startScreen) startScreen.style.display = 'none';
-        if (gameScreen) gameScreen.style.display = 'flex';
-        
-        startGame();
+    // Lobby hide karein aur Game Container show karein
+    let lobbyGrid = document.querySelector('.lobby-grid');
+    if (lobbyGrid) lobbyGrid.classList.add('hidden');
+
+    let gameContainer = document.getElementById('game-container');
+    if (gameContainer) gameContainer.classList.remove('hidden');
+    
+    startGame();
     });
 
     socket.on('opp-move', (moveData) => {
