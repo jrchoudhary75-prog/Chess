@@ -193,41 +193,42 @@
   </div>
 
   <script>
-    async function searchFriend() {
-      const query = document.getElementById('friend-search-input').value.trim();
-      if (!query) return;
-      const resultsDiv = document.getElementById('search-results');
-      resultsDiv.innerHTML = "<p style='color:#aaa;'>Searching players...</p>";
-      
-      try {
+   async function searchFriend() {
+    const query = document.getElementById('friend-search-input').value.trim();
+    if (!query) return;
+    const resultsDiv = document.getElementById('search-results');
+    resultsDiv.innerHTML = "<p style='color:#aaa;'>Searching player...</p>";
+    
+    try {
         const res = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`);
         const users = await res.json();
         
         if (users.length === 0) {
-          resultsDiv.innerHTML = "<p style='color:#aaa;'>No player found.</p>";
-          return;
+            resultsDiv.innerHTML = "<p style='color:#aaa;'>No player found with this ID.</p>";
+            return;
         }
 
         resultsDiv.innerHTML = users.map(u => `
-          <div style="display:flex; justify-content:space-between; align-items:center; background:#1a1917; padding:10px; border-radius:6px; margin-bottom:8px;">
-            <div style="display:flex; align-items:center; gap:10px;">
-              <img src="${u.profilePic || ''}" style="width:32px; height:32px; border-radius:50%;">
-              <div style="text-align:left;">
-                <div style="color:white; font-size:14px; font-weight:bold;">${u.name}</div>
-                <div style="font-size:12px; color:#888;">Rating: ${u.rating || 1200}</div>
-              </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#1a1917; padding:10px; border-radius:6px; margin-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <img src="${u.profilePic || ''}" style="width:32px; height:32px; border-radius:50%;">
+                    <div style="text-align:left;">
+                        <div style="color:white; font-size:14px; font-weight:bold;">${u.name}</div>
+                        <div style="font-size:12px; color:#888;">Rating: ${u.rating || 1200}</div>
+                    </div>
+                </div>
+                <button onclick="sendChallenge('${u.googleId}')" style="background:#81b64c; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">Challenge</button>
             </div>
-            <button onclick="challengeUser('${u._id}')" style="background:#81b64c; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">Challenge</button>
-          </div>
         `).join('');
-      } catch(err) {
-        resultsDiv.innerHTML = "<p style='color:#e53935;'>Error loading players.</p>";
-      }
+    } catch(err) {
+        resultsDiv.innerHTML = "<p style='color:#e53935;'>Error searching player.</p>";
     }
+}
 
-    function challengeUser(userId) {
-      alert("Sending challenge invitation...");
-    }
+function sendChallenge(friendId) {
+    alert("Challenge invitation sent successfully!");
+    // Socket.io ke zariye yahan challenge event emit kiya ja sakta hai
+}
   </script>
 
   <!-- Scripts -->

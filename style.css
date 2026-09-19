@@ -9,11 +9,11 @@
 body {
     background-color: #161512;
     color: #9f9e9b;
-    height: 100vh;
+    min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden;
+    overflow-x: hidden;
 }
 
 .screen {
@@ -30,13 +30,19 @@ body {
     gap: 16px;
     background: #161512;
     align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 10px;
+    width: 100%;
+    max-width: 1000px;
 }
 
 .board-area {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    width: 480px;
+    width: 100%;
+    max-width: 480px;
 }
 
 /* Player HUDs */
@@ -93,18 +99,20 @@ body {
     color: #ffffff;
 }
 
-/* Board Sizing Fix (480px Container) */
+/* Chessboard Responsive Container */
 #chessboard, #board, .chessboard {
     display: grid;
-    grid-template-columns: repeat(8, 60px);
-    grid-template-rows: repeat(8, 60px);
-    width: 480px;
-    height: 480px;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    width: 100%;
+    max-width: 480px;
+    aspect-ratio: 1 / 1;
     border-radius: 2px;
     overflow: hidden;
     position: relative;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     border: 1px solid #363431;
+    margin: 0 auto;
 }
 
 .square {
@@ -113,8 +121,8 @@ body {
     align-items: center;
     position: relative;
     cursor: pointer;
-    width: 60px;
-    height: 60px;
+    width: 100%;
+    height: 100%;
 }
 
 /* Classic Lichess Board Colors */
@@ -125,23 +133,45 @@ body {
 .square.check { background-color: #ff4d4d !important; }
 .square.hint { background-color: #e6e600 !important; }
 
+/* Move and Capture Paths / Indicators Visibility */
+.move-indicator {
+    width: 22%;
+    height: 22%;
+    background-color: rgba(0, 0, 0, 0.25);
+    border-radius: 50%;
+    position: absolute;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.capture-indicator {
+    position: absolute;
+    inset: 4px;
+    border: 5px solid rgba(0, 0, 0, 0.25);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 5;
+}
+
 .piece {
     width: 85%;
     height: 85%;
     user-select: none;
     pointer-events: none;
+    z-index: 2;
 }
 
 /* Right Sidebar Panel */
 .sidebar {
-    width: 260px;
+    width: 100%;
+    max-width: 260px;
     display: flex;
     flex-direction: column;
     gap: 10px;
     background: #262421;
     padding: 14px;
     border-radius: 4px;
-    height: 570px;
+    height: 480px;
     border: 1px solid #363431;
 }
 
@@ -216,11 +246,33 @@ body {
     background: #a82020;
     color: white;
 }
-/* Chessboard container size fix */
-#board {
-    width: 100%;
-    max-width: 560px; /* Ya aapki pasand ka size */
-    aspect-ratio: 1 / 1; /* Board ko hamesha square rakhne ke liye */
-    background-color: #302e2b; /* Ek default dark color */
-    margin: 0 auto;
+
+/* Mobile Responsive Media Query */
+@media (max-width: 768px) {
+    body {
+        overflow-y: auto;
+        height: auto;
+        padding: 10px 0;
+    }
+    .game-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        padding: 5px;
+    }
+    .board-area {
+        width: 95vw;
+        max-width: 400px;
+    }
+    #chessboard, #board, .chessboard {
+        width: 95vw !important;
+        max-width: 400px !important;
+        height: 95vw !important;
+        max-height: 400px !important;
+    }
+    .sidebar {
+        width: 95vw !important;
+        max-width: 400px !important;
+        height: 220px;
+    }
 }
