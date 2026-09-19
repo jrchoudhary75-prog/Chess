@@ -1,26 +1,65 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const path = require('path'); // Naya add kiya: File paths handle karne ke liye
+const http = require('http');
+const { Server } = require('socket.io');
+const path = require('path');
+
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
 // Body Parser Middleware
 app.use(express.json());
 
-// Sabhi static files (index.html, game_3.js, style.css) ko root folder se allow karega
+// Sabhi static files ko root folder se allow karega
 app.use(express.static(__dirname));
 
-// Default Route: Jab koi website open karega toh directly index.html load hogi
+// Default Route
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 1. Port Binding (Server ko pehle start karein taaki Render timeout na ho)
+// Socket.io Real-time Multiplayer Logic
+const rooms = {};
+
+io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+
+    socket.on('create-room', () => {
+        const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+        rooms[roomId] = { p1: socket.id, p2: null };
+        socket.join(roomId);
+        socket.emit('room-created', { roomId, color: 'white' });
+    });
+
+    socket.on('join-room', (roomId) => {
+        roomId = roomId.toUpperCase();
+        if (rooms[roomId] && !rooms[roomId].p2) {
+            rooms[roomId].p2 = socket.id;
+            socket.join(roomId);
+            io.to(rooms[roomId].p1).emit('game-start', { roomId, color: 'white' });
+            socket.emit('game-start', { roomId, color: 'black' });
+        } else {
+            socket.emit('room-error', 'Room not found or already full!');
+        }
+    });
+
+    socket.on('make-move', (data) => {
+        socket.to(data.roomId).emit('opp-move', data.move);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+    });
+});
+
+// Port Binding (Using server.listen instead of app.listen for Socket.io)
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
 });
 
-// 2. Non-blocking MongoDB Connection
+// Non-blocking MongoDB Connection
 const MONGO_URI = process.env.MONGODB_URI;
 if (MONGO_URI) {
     mongoose.connect(MONGO_URI)

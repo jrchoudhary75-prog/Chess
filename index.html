@@ -123,44 +123,6 @@
         <h2>Play vs Computer</h2>
         <p>Practice tactics against AI.</p>
         <button class="btn-action" onclick="startBotGame()">Play with Bot</button>
-       <!-- Rating & Color Selection Modal -->
-<div id="ratingModal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10000;">
-  <div style="background: #262421; padding: 30px; border-radius: 12px; width: 350px; text-align: center; border: 1px solid #363431; color: white;">
-    <h2>Play vs Stockfish Bot</h2>
-    <p style="margin: 15px 0; color: #a0a0a0; font-size: 14px;">Select Bot Elo & Your Color</p>
-    
-    <!-- Elo Selection -->
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-      <button class="rating-btn action-btn" data-rating="800" style="background:#363431;">Beginner (800)</button>
-      <button class="rating-btn action-btn" data-rating="1200" style="background:#363431;">Intermediate (1200)</button>
-      <button class="rating-btn action-btn" data-rating="1600" style="background:#363431;">Advanced (1600)</button>
-      <button class="rating-btn action-btn" data-rating="2100" style="background:#629924;">Master (2100)</button>
-    </div>
-
-    <!-- Color Choice -->
-    <div style="margin-bottom: 20px;">
-      <p style="font-size: 13px; margin-bottom: 8px; color: #ccc;">Choose Piece Color:</p>
-      <div style="display: flex; justify-content: center; gap: 10px;">
-        <button onclick="setChosenColor('white')" class="color-choice-btn action-btn" data-color="white" style="background: #eee; color: #333;">White</button>
-        <button onclick="setChosenColor('random')" class="color-choice-btn action-btn" data-color="random" style="background: #888; color: white;">Random</button>
-        <button onclick="setChosenColor('black')" class="color-choice-btn action-btn" data-color="black" style="background: #333; color: white; border: 2px solid #629924;">Black</button>
-      </div>
-    </div>
-
-    <button onclick="closeModal()" style="background: #e53935; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%;">Cancel</button>
-  </div>
-
-<!-- Game Over Modal Popup -->
-<div id="gameOverModal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10000;">
-  <div style="background: #262421; padding: 30px; border-radius: 12px; width: 320px; text-align: center; border: 1px solid #363431; color: white;">
-    <h2 id="gameOverTitle" style="margin-bottom: 10px; color: #81b64c;">Game Over</h2>
-    <p id="gameOverMessage" style="margin-bottom: 20px; color: #ccc; font-size: 15px;"></p>
-    <div style="display: flex; gap: 10px;">
-      <button onclick="playAgain()" class="action-btn" style="background: #81b64c; flex: 1;">Play Again</button>
-      <button onclick="goHome()" class="action-btn" style="background: #403d39; flex: 1;">Main Menu</button>
-    </div>
-  </div>
-</div>
       </div>
 
       <!-- Play with Friend -->
@@ -172,6 +134,12 @@
           <button class="btn-action" style="width: auto; padding: 10px 16px;" onclick="searchFriend()">Search</button>
         </div>
         <div id="search-results" style="margin-top: 15px;"></div>
+        <div id="roomStatusText" style="margin-top: 10px; color: #81b64c; font-size: 14px;"></div>
+        <div style="display: flex; gap: 8px; margin-top: 10px;">
+          <button onclick="createPrivateGame()" class="action-btn" style="background:#4285F4; flex:1;">Create Private Room</button>
+          <input type="text" id="roomCodeInput" placeholder="Room Code" class="search-input" style="flex:1;">
+          <button onclick="joinPrivateGame()" class="action-btn" style="background:#81b64c; flex:1;">Join</button>
+        </div>
       </div>
     </div>
 
@@ -230,6 +198,46 @@
 
   </div>
 
+  <!-- Rating & Color Selection Modal -->
+  <div id="ratingModal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10000;">
+    <div style="background: #262421; padding: 30px; border-radius: 12px; width: 350px; text-align: center; border: 1px solid #363431; color: white;">
+      <h2>Play vs Stockfish Bot</h2>
+      <p style="margin: 15px 0; color: #a0a0a0; font-size: 14px;">Select Bot Elo & Your Color</p>
+      
+      <!-- Elo Selection -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+        <button class="rating-btn action-btn" data-rating="800" style="background:#363431;">Beginner (800)</button>
+        <button class="rating-btn action-btn" data-rating="1200" style="background:#363431;">Intermediate (1200)</button>
+        <button class="rating-btn action-btn" data-rating="1600" style="background:#363431;">Advanced (1600)</button>
+        <button class="rating-btn action-btn" data-rating="2100" style="background:#629924;">Master (2100)</button>
+      </div>
+
+      <!-- Color Choice -->
+      <div style="margin-bottom: 20px;">
+        <p style="font-size: 13px; margin-bottom: 8px; color: #ccc;">Choose Piece Color:</p>
+        <div style="display: flex; justify-content: center; gap: 10px;">
+          <button onclick="setChosenColor('white')" class="color-choice-btn action-btn" data-color="white" style="background: #eee; color: #333;">White</button>
+          <button onclick="setChosenColor('random')" class="color-choice-btn action-btn" data-color="random" style="background: #888; color: white;">Random</button>
+          <button onclick="setChosenColor('black')" class="color-choice-btn action-btn" data-color="black" style="background: #333; color: white; border: 2px solid #629924;">Black</button>
+        </div>
+      </div>
+
+      <button onclick="closeModal()" style="background: #e53935; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Game Over Modal Popup -->
+  <div id="gameOverModal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10000;">
+    <div style="background: #262421; padding: 30px; border-radius: 12px; width: 320px; text-align: center; border: 1px solid #363431; color: white;">
+      <h2 id="gameOverTitle" style="margin-bottom: 10px; color: #81b64c;">Game Over</h2>
+      <p id="gameOverMessage" style="margin-bottom: 20px; color: #ccc; font-size: 15px;"></p>
+      <div style="display: flex; gap: 10px;">
+        <button onclick="playAgain()" class="action-btn" style="background: #81b64c; flex: 1;">Play Again</button>
+        <button onclick="goHome()" class="action-btn" style="background: #403d39; flex: 1;">Main Menu</button>
+      </div>
+    </div>
+  </div>
+
   <script>
    async function searchFriend() {
     const query = document.getElementById('friend-search-input').value.trim();
@@ -265,12 +273,11 @@
 
 function sendChallenge(friendId) {
     alert("Challenge invitation sent successfully!");
-    // Socket.io ke zariye yahan challenge event emit kiya ja sakta hai
 }
   </script>
 
   <!-- Scripts -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
   <script src="game.js"></script>
 </body>
 </html>

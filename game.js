@@ -514,7 +514,7 @@ function triggerFallbackBotMove() {
     }
     if (allMoves.length > 0) {
         let randomMove = allMoves[Math.floor(Math.random() * allMoves.length)];
-        animateAndMakeMove(randomMove.sr, randomNode.sc, randomMove.tr, randomMove.tc, function() {
+        animateAndMakeMove(randomMove.sr, randomMove.sc, randomMove.tr, randomMove.tc, function() {
             checkGameEndConditions();
         }, false);
     }
