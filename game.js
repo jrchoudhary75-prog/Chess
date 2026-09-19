@@ -100,44 +100,34 @@ function setupUI() {
     });
 }
 
-function setChosenColor(color) {
+window.setChosenColor = function(color) {
     chosenColorChoice = color;
     document.querySelectorAll('.color-choice-btn').forEach(btn => {
         btn.style.border = (btn.getAttribute('data-color') === color) ? '2px solid #629924' : 'none';
     });
 }
 
-function closeModal() {
+window.closeModal = function() {
     let modal = document.getElementById('ratingModal');
     if (modal) modal.style.display = 'none';
 }
 
-function closeModal() {
-    let modal = document.getElementById('ratingModal');
-    if (modal) modal.style.display = 'none';
-}
-
-function playAgain() {
+window.playAgain = function() {
     let goModal = document.getElementById('gameOverModal');
     if (goModal) goModal.style.display = 'none';
     startGame();
 }
 
-function goHome() {
+window.goHome = function() {
     let goModal = document.getElementById('gameOverModal');
     if (goModal) goModal.style.display = 'none';
-    let gameScreen = document.getElementById('gameScreen');
-    if (gameScreen) gameScreen.style.display = 'none';
-    let startScreen = document.getElementById('startScreen');
-    if (startScreen) startScreen.style.display = 'flex';
     let gameContainer = document.getElementById('game-container');
     if (gameContainer) gameContainer.classList.add('hidden');
     let lobbyGrid = document.querySelector('.lobby-grid');
     if (lobbyGrid) lobbyGrid.classList.remove('hidden');
 }
 
-// Fixed startBotGame: Removed the duplicate definitions from top and bottom.
-function startBotGame() {
+window.startBotGame = function() {
     let modal = document.getElementById('ratingModal');
     if (modal) {
         modal.style.display = 'flex';
@@ -151,7 +141,7 @@ function startBotGame() {
     }
 }
 
-function backToLobby() {
+window.backToLobby = function() {
     goHome();
 }
 
@@ -268,7 +258,8 @@ function renderBoard() {
 }
 
 function getPieceImage(piece) {
-    const basePath = '/public/'; 
+    // Agar SVG files root folder me hain, toh basePath '' (empty) hona chahiye
+    const basePath = '/pubilc/'; 
     let map = {
         'P': 'wp.svg', 'N': 'wn.svg', 'B': 'wb.svg', 'R': 'wr.svg', 'Q': 'wq.svg', 'K': 'wk.svg',
         'p': 'bp.svg', 'n': 'bn.svg', 'b': 'bb.svg', 'r': 'br.svg', 'q': 'bq.svg', 'k': 'bk.svg'
@@ -332,7 +323,6 @@ function animateAndMakeMove(sr, sc, tr, tc, callback, isLocal = true) {
     historyLog.push(moveStr);
     updateMoveHistoryDisplay();
 
-    // Send move to server in friend mode
     if (gameMode === 'friend' && isLocal && myRoomId && socket) {
         socket.emit('make-move', { roomId: myRoomId, move: { sr, sc, tr, tc } });
     }
@@ -444,7 +434,7 @@ function updateMoveHistoryDisplay() {
     listEl.scrollTop = listEl.scrollHeight;
 }
 
-function undoMove() {
+window.undoMove = function() {
     if (moveHistory.length === 0 || !gameActive) return;
     if (gameMode === 'friend') {
         alert('Undo is disabled in multiplayer mode');
@@ -471,7 +461,7 @@ function undoMove() {
     renderBoard();
 }
 
-function resignGame() {
+window.resignGame = function() {
     if (!gameActive) return;
     gameActive = false;
     showGameOverModal("Resignation", `You resigned. Opponent wins the match!`);
@@ -490,7 +480,7 @@ function showGameOverModal(title, message) {
     }
 }
 
-function requestHint() {
+window.requestHint = function() {
     if (!stockfish || !gameActive || turn !== playerColor) return;
     isHintActive = true;
     let fen = getFen();
@@ -524,7 +514,7 @@ function triggerFallbackBotMove() {
     }
     if (allMoves.length > 0) {
         let randomMove = allMoves[Math.floor(Math.random() * allMoves.length)];
-        animateAndMakeMove(randomMove.sr, randomMove.sc, randomMove.tr, randomMove.tc, function() {
+        animateAndMakeMove(randomMove.sr, randomNode.sc, randomMove.tr, randomMove.tc, function() {
             checkGameEndConditions();
         }, false);
     }
@@ -572,14 +562,6 @@ function executeEngineMove(bestMoveStr) {
     animateAndMakeMove(sr, sc, tr, tc, function() {
         checkGameEndConditions();
     }, false);
-}
-
-function startChessGame() {
-  let lobbyGrid = document.querySelector('.lobby-grid');
-  if (lobbyGrid) lobbyGrid.classList.add('hidden');
-  let gameContainer = document.getElementById('game-container');
-  if (gameContainer) gameContainer.classList.remove('hidden');
-  startGame();
 }
 
 function checkGameEndConditions() {
@@ -810,13 +792,13 @@ function hasAnyLegalMoves(color) {
 }
 
 // Online Private Room Logic
-function createPrivateGame() {
+window.createPrivateGame = function() {
     if (!socket) return alert('Server Connection Lost! Run node server.js');
     gameMode = 'friend';
     socket.emit('create-room');
 }
 
-function joinPrivateGame() {
+window.joinPrivateGame = function() {
     if (!socket) return alert('Server Connection Lost! Run node server.js');
     let codeInput = document.getElementById('roomCodeInput');
     let code = codeInput ? codeInput.value.trim().toUpperCase() : '';
