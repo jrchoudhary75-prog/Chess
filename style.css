@@ -1,4 +1,4 @@
-/* Authentic Lichess Dark Theme & Layout */
+/* Authentic Lichess Dark Theme & Adaptive Layout */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -10,31 +10,34 @@ body {
     background-color: #161512;
     color: #9f9e9b;
     min-height: 100vh;
+    width: 100vw;
     display: flex;
     justify-content: center;
     align-items: center;
     overflow-x: hidden;
+    overflow-y: auto;
+    padding: 15px;
 }
 
 .screen {
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-/* Lichess Game Arena Layout */
+/* Adaptive Game Arena Container */
 .game-container {
     display: flex;
-    gap: 16px;
+    gap: 20px;
     background: #161512;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
     flex-wrap: wrap;
-    padding: 10px;
     width: 100%;
-    max-width: 1000px;
+    max-width: 900px;
+    margin: auto;
 }
 
 .board-area {
@@ -43,6 +46,7 @@ body {
     gap: 6px;
     width: 100%;
     max-width: 480px;
+    flex: 1 1 320px;
 }
 
 /* Player HUDs */
@@ -58,6 +62,7 @@ body {
     color: #efefe9;
     height: 38px;
     border: 1px solid #363431;
+    width: 100%;
 }
 
 .player-info {
@@ -83,23 +88,7 @@ body {
     color: #bababa;
 }
 
-.hud-logout-btn {
-    background: #363431;
-    color: #c0c0c0;
-    border: none;
-    padding: 4px 8px;
-    font-size: 0.75rem;
-    border-radius: 3px;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s;
-}
-
-.hud-logout-btn:hover {
-    background: #a82020;
-    color: #ffffff;
-}
-
-/* Chessboard Responsive Container */
+/* Fully Adaptive Chessboard Grid */
 #chessboard, #board, .chessboard {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
@@ -133,7 +122,7 @@ body {
 .square.check { background-color: #ff4d4d !important; }
 .square.hint { background-color: #e6e600 !important; }
 
-/* Move and Capture Paths / Indicators Visibility */
+/* Move and Capture Indicators */
 .move-indicator {
     width: 22%;
     height: 22%;
@@ -161,10 +150,11 @@ body {
     z-index: 2;
 }
 
-/* Right Sidebar Panel */
+/* Adaptive Right Sidebar Panel */
 .sidebar {
     width: 100%;
-    max-width: 260px;
+    max-width: 280px;
+    flex: 1 1 250px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -247,32 +237,28 @@ body {
     color: white;
 }
 
-/* Mobile Responsive Media Query */
+/* Mobile & Tablet Optimization Media Query */
 @media (max-width: 768px) {
     body {
-        overflow-y: auto;
-        height: auto;
-        padding: 10px 0;
+        align-items: flex-start;
+        padding: 10px;
     }
     .game-container {
         flex-direction: column;
         align-items: center;
         gap: 12px;
-        padding: 5px;
     }
     .board-area {
-        width: 95vw;
-        max-width: 400px;
+        max-width: 100%;
+        width: 100%;
     }
     #chessboard, #board, .chessboard {
-        width: 95vw !important;
-        max-width: 400px !important;
-        height: 95vw !important;
-        max-height: 400px !important;
+        max-width: 100% !important;
+        width: 100% !important;
     }
     .sidebar {
-        width: 95vw !important;
-        max-width: 400px !important;
+        max-width: 100% !important;
+        width: 100% !important;
         height: 220px;
     }
 }
