@@ -22,90 +22,14 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-direction: column;
 }
 
-/* Start Screen & Hero Card */
-.hero-card {
-    background: #262421;
-    padding: 35px;
-    border-radius: 4px;
-    text-align: center;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-    width: 420px;
-    border: 1px solid #363431;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.hero-card h1 {
-    font-size: 2.2rem;
-    color: #efefe9;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-}
-
-.hero-card p {
-    color: #9f9e9b;
-    font-size: 0.9rem;
-    line-height: 1.4;
-}
-
-/* Primary Lichess Green Button */
-.primary-btn {
-    background-color: #629924;
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    border-radius: 3px;
-    cursor: pointer;
-    transition: background 0.15s ease-in-out;
-    width: 100%;
-}
-
-.primary-btn:hover {
-    background-color: #72b028;
-}
-
-/* Friend Match Box (Lichess Style Input & Layout) */
-.friend-match-box {
-    background: #1e1c18;
-    border: 1px solid #363431;
-    border-radius: 4px;
-    padding: 15px;
-    margin-top: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    text-align: left;
-}
-
-.friend-match-box input[type="text"] {
-    padding: 10px 12px;
-    background: #161512;
-    border: 1px solid #363431;
-    color: #efefe9;
-    border-radius: 3px;
-    font-size: 0.9rem;
-    outline: none;
-    transition: border-color 0.2s;
-}
-
-.friend-match-box input[type="text"]:focus {
-    border-color: #629924;
-}
-
-/* Lichess Game Arena Grid Layout */
+/* Lichess Game Arena Layout */
 .game-container {
     display: flex;
     gap: 16px;
     background: #161512;
-    padding: 0;
-    border-radius: 4px;
-    align-items: stretch;
+    align-items: flex-start;
 }
 
 .board-area {
@@ -115,18 +39,18 @@ body {
     width: 480px;
 }
 
-/* Player & Bot HUDs */
+/* Player HUDs */
 .player-hud {
     display: flex;
     justify-content: space-between;
     align-items: center;
     background: #262421;
-    padding: 6px 10px;
+    padding: 6px 12px;
     border-radius: 3px;
     font-size: 0.85rem;
     font-weight: 500;
     color: #efefe9;
-    height: 36px;
+    height: 38px;
     border: 1px solid #363431;
 }
 
@@ -153,7 +77,23 @@ body {
     color: #bababa;
 }
 
-/* Perfect Viewport-Friendly Board (480px = 8 x 60px) */
+.hud-logout-btn {
+    background: #363431;
+    color: #c0c0c0;
+    border: none;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.hud-logout-btn:hover {
+    background: #a82020;
+    color: #ffffff;
+}
+
+/* Board Sizing Fix (480px Container) */
 #chessboard, #board, .chessboard {
     display: grid;
     grid-template-columns: repeat(8, 60px);
@@ -175,61 +115,33 @@ body {
     cursor: pointer;
     width: 60px;
     height: 60px;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
 }
 
-/* Classic Lichess Green Board Palette */
+/* Classic Lichess Board Colors */
 .light { background-color: #eeeed2; }
 .dark { background-color: #769656; }
 
-/* Move & Action Highlights */
-.square.selected {
-    background-color: #bbc784 !important;
-}
-
-.square.check {
-    background-color: #ff4d4d !important;
-}
-
-.square.hint {
-    background-color: #e6e600 !important;
-}
+.square.selected { background-color: #bbc784 !important; }
+.square.check { background-color: #ff4d4d !important; }
+.square.hint { background-color: #e6e600 !important; }
 
 .piece {
     width: 85%;
     height: 85%;
     user-select: none;
     pointer-events: none;
-    transition: transform 0.18s ease-in-out;
 }
 
-.move-indicator {
-    width: 16px;
-    height: 16px;
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 50%;
-    position: absolute;
-}
-
-.capture-indicator {
-    width: 100%;
-    height: 100%;
-    border: 3px solid rgba(0, 0, 0, 0.25);
-    border-radius: 50%;
-    position: absolute;
-}
-
-/* Sidebar & Control Panel */
+/* Right Sidebar Panel */
 .sidebar {
-    width: 280px;
+    width: 260px;
     display: flex;
     flex-direction: column;
     gap: 10px;
     background: #262421;
     padding: 14px;
     border-radius: 4px;
-    height: 558px;
+    height: 570px;
     border: 1px solid #363431;
 }
 
@@ -244,7 +156,6 @@ body {
 .sidebar-header h3 {
     font-size: 0.9rem;
     color: #efefe9;
-    font-weight: 600;
 }
 
 .status-badge {
@@ -253,11 +164,10 @@ body {
     font-weight: 600;
 }
 
-/* Move History Section */
+/* Move Notation Area */
 .move-history-container {
     display: flex;
     flex-direction: column;
-    gap: 6px;
     flex-grow: 1;
 }
 
@@ -268,16 +178,17 @@ body {
     flex-grow: 1;
     overflow-y: auto;
     padding: 8px;
-    font-family: "Courier New", Courier, monospace;
-    font-size: 0.8rem;
+    font-family: monospace;
+    font-size: 0.85rem;
     color: #c0c0c0;
+    line-height: 1.6;
 }
 
-/* Action Buttons Grid */
+/* Controls Grid */
 .control-panel {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    gap: 8px;
 }
 
 .action-btn {
@@ -292,126 +203,16 @@ body {
     transition: background 0.15s;
 }
 
-.action-btn:hover {
-    background: #45423e;
-}
+.action-btn:hover { background: #45423e; }
 
 .danger-btn {
-    background: #a82020;
+    background: #2b2824;
+    color: #e55353;
+    border: 1px solid #363431;
     grid-column: span 2;
 }
 
 .danger-btn:hover {
-    background: #be2525;
-}
-
-/* Modals Overlay */
-.modal {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.75);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-.modal-content {
-    background: #262421;
-    padding: 24px;
-    border-radius: 4px;
-    width: 340px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    border: 1px solid #363431;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-}
-
-.modal-content h2 {
-    font-size: 1.1rem;
-    color: #efefe9;
-    text-align: center;
-    margin-bottom: 4px;
-}
-
-.rating-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-}
-
-.rating-btn {
-    background: #1e1c18;
-    color: #efefe9;
-    border: 1px solid #363431;
-    padding: 10px 14px;
-    border-radius: 3px;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.9rem;
-    transition: all 0.15s;
-}
-
-.rating-btn:hover {
-    background: #363431;
-    border-color: #629924;
-}
-
-.secondary-btn {
-    background: transparent;
-    color: #9f9e9b;
-    border: 1px solid #363431;
-    padding: 8px;
-    border-radius: 3px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.85rem;
-    transition: all 0.15s;
-    width: 100%;
-}
-
-.secondary-btn:hover {
-    background: #363431;
-    color: #efefe9;
-}
-
-/* Mobile Responsiveness */
-@media (max-width: 900px) {
-    body {
-        overflow-y: auto;
-    }
-
-    .game-container {
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .board-area {
-        width: 384px;
-    }
-
-    #chessboard, #board, .chessboard {
-        grid-template-columns: repeat(8, 48px);
-        grid-template-rows: repeat(8, 48px);
-        width: 384px;
-        height: 384px;
-    }
-
-    .square {
-        width: 48px;
-        height: 48px;
-    }
-
-    .sidebar {
-        width: 384px;
-        height: auto;
-    }
-
-    .move-list {
-        max-height: 100px;
-    }
+    background: #a82020;
+    color: white;
 }
