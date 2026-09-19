@@ -74,7 +74,6 @@ function setupUI() {
             selectedBotRating = parseInt(this.getAttribute('data-rating')) || 1600;
             gameMode = 'bot';
             
-            // Set Player Color according to choice
             if (chosenColorChoice === 'random') {
                 playerColor = Math.random() < 0.5 ? 'white' : 'black';
             } else {
@@ -83,12 +82,6 @@ function setupUI() {
 
             let modal = document.getElementById('ratingModal');
             if (modal) modal.style.display = 'none';
-
-            let startSc = document.getElementById('startScreen');
-            if (startSc) startSc.style.display = 'none';
-
-            let gameSc = document.getElementById('gameScreen');
-            if (gameSc) gameSc.style.display = 'flex';
 
             let lobbyGrid = document.querySelector('.lobby-grid');
             if (lobbyGrid) lobbyGrid.classList.add('hidden');
@@ -112,6 +105,25 @@ function setChosenColor(color) {
     document.querySelectorAll('.color-choice-btn').forEach(btn => {
         btn.style.border = (btn.getAttribute('data-color') === color) ? '2px solid #629924' : 'none';
     });
+}
+
+function closeModal() {
+    let modal = document.getElementById('ratingModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function startBotGame() {
+    let modal = document.getElementById('ratingModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    } else {
+        gameMode = 'bot';
+        let lobbyGrid = document.querySelector('.lobby-grid');
+        if (lobbyGrid) lobbyGrid.classList.add('hidden');
+        let gameContainer = document.getElementById('game-container');
+        if (gameContainer) gameContainer.classList.remove('hidden');
+        startGame();
+    }
 }
 
 function closeModal() {
