@@ -875,35 +875,40 @@ if (socket) {
 }
 // === UI Navigation & Game Load Functions ===
 
-// 1. Bot ke sath game start karne ka function
 window.startBotGame = function() {
-    console.log("Play with Bot clicked! Loading game...");
+    console.log("Play with Bot clicked! Loading game UI...");
     
-    // Lobby wale hisse ko hide karo
+    // 1. Lobby ko hide karo
     const lobby = document.querySelector('.lobby-grid');
-    if (lobby) lobby.style.display = 'none';
+    if (lobby) {
+        lobby.classList.add('hidden');
+        lobby.style.display = 'none';
+    }
     
-    // Game Board wale hisse ko show karo
+    // 2. Game UI ko show karo
     const gameContainer = document.getElementById('game-container');
     if (gameContainer) {
         gameContainer.classList.remove('hidden');
-        gameContainer.style.display = 'block';
+        gameContainer.style.display = 'block'; 
     }
     
-    // Agar aapka chess board pehle se load nahi hua hai, toh usko yahan start/reset karein.
-    // U उदाहरण ke liye, agar aapka reset function 'resetGame()' hai toh usko call karein:
-    // resetGame(); 
-};
-
-// 2. Wapas Lobby mein aane ka function (Back button ke liye)
-window.backToLobby = function() {
-    // Game board ko hide karo
-    const gameContainer = document.getElementById('game-container');
-    if (gameContainer) {
-        gameContainer.style.display = 'none';
-    }
-    
-    // Lobby ko wapas show karo
-    const lobby = document.querySelector('.lobby-grid');
-    if (lobby) lobby.style.display = 'grid'; 
+    // 3. THODA SA DELAY (100 milliseconds) TAKI UI PEHLE SCREEN PAR AA JAYE
+    setTimeout(() => {
+        console.log("Drawing board now...");
+        
+        // --- YAHAN AAPKO APNA ASLI FUNCTION DALNA HAI ---
+        
+        // AGAR aap Chessboard.js library use kar rahe hain aur board pehle se variable mein hai:
+        if (typeof board !== 'undefined' && typeof board.resize === 'function') {
+            board.resize(); // Board ko naye size ke hisaab se adjust kar dega
+        } 
+        else {
+            // Agar aapka koi specific function hai jo game start karta hai, toh usko yahan likhein:
+            // Udaharan:
+            // initGame(); 
+            // ya 
+            // board = Chessboard('board', config); 
+        }
+        
+    }, 100); // 100 miliseconds ka delay
 };
