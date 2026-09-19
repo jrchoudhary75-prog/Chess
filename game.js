@@ -112,20 +112,6 @@ function closeModal() {
     if (modal) modal.style.display = 'none';
 }
 
-function startBotGame() {
-    let modal = document.getElementById('ratingModal');
-    if (modal) {
-        modal.style.display = 'flex';
-    } else {
-        gameMode = 'bot';
-        let lobbyGrid = document.querySelector('.lobby-grid');
-        if (lobbyGrid) lobbyGrid.classList.add('hidden');
-        let gameContainer = document.getElementById('game-container');
-        if (gameContainer) gameContainer.classList.remove('hidden');
-        startGame();
-    }
-}
-
 function closeModal() {
     let modal = document.getElementById('ratingModal');
     if (modal) modal.style.display = 'none';
