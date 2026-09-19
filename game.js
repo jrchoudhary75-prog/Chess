@@ -109,7 +109,10 @@ window.setChosenColor = function(color) {
 
 window.closeModal = function() {
     let modal = document.getElementById('ratingModal');
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    }
 }
 
 window.playAgain = function() {
@@ -130,6 +133,7 @@ window.goHome = function() {
 window.startBotGame = function() {
     let modal = document.getElementById('ratingModal');
     if (modal) {
+        modal.classList.remove('hidden'); // hidden class ko hatana zaroori hai
         modal.style.display = 'flex';
     } else {
         gameMode = 'bot';
