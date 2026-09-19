@@ -19,7 +19,6 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-socket.emit('register-user', myUserId);
 
 const connectedUsers = {}; // { userId: socket.id }
 
