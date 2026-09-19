@@ -19,6 +19,36 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+socket.emit('register-user', myUserId);
+
+const connectedUsers = {}; // { userId: socket.id }
+
+io.on('connection', (socket) => {
+    // User registration
+    socket.on('register-user', (userId) => {
+        connectedUsers[userId] = socket.id;
+    });
+
+    // Friend search request
+    socket.on('search-user', (searchId) => {
+        if (connectedUsers[searchId]) {
+            socket.emit('user-found', { userId: searchId, status: 'Online' });
+        } else {
+            socket.emit('user-not-found');
+        }
+    });
+
+    // Jab user disconnect ho jaye
+    socket.on('disconnect', () => {
+        for (let id in connectedUsers) {
+            if (connectedUsers[id] === socket.id) {
+                delete connectedUsers[id];
+                break;
+            }
+        }
+    });
+});
+
 // Socket.io Real-time Multiplayer Logic
 const rooms = {};
 
