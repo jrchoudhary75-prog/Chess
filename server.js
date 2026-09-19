@@ -1,11 +1,18 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const path = require('path'); // Naya add kiya: File paths handle karne ke liye
 const app = express();
 
-app.use(express.static('public'));
 // Body Parser Middleware
 app.use(express.json());
+
+// Sabhi static files (index.html, game_3.js, style.css) ko root folder se allow karega
 app.use(express.static(__dirname));
+
+// Default Route: Jab koi website open karega toh directly index.html load hogi
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // 1. Port Binding (Server ko pehle start karein taaki Render timeout na ho)
 const PORT = process.env.PORT || 3000;
@@ -33,11 +40,12 @@ const userSchema = new mongoose.Schema({
     isOnline: { type: Boolean, default: false }
 });
 const User = mongoose.model('User', userSchema);
+
 // Search User API
 app.get('/api/users/search', async (req, res) => {
     try {
         const query = req.query.q || '';
-        const users = await User.find({ name: { $regex: query, $options: 'i' } }).limit(10);
+        const users = await User.find({ name: { $regex: query,$options: 'i' } }).limit(10);
         res.json(users);
     } catch (err) {
         res.status(500).json({ error: err.message });
