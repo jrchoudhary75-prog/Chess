@@ -269,13 +269,14 @@ function renderBoard() {
 }
 
 function getPieceImage(piece) {
+    // Apne folder ke hisab se path set karein (e.g., '/assets/' ya '/images/')
+    const basePath = '/public/'; 
     let map = {
         'P': 'wp.svg', 'N': 'wn.svg', 'B': 'wb.svg', 'R': 'wr.svg', 'Q': 'wq.svg', 'K': 'wk.svg',
         'p': 'bp.svg', 'n': 'bn.svg', 'b': 'bb.svg', 'r': 'br.svg', 'q': 'bq.svg', 'k': 'bk.svg'
     };
-    return map[piece] || '';
+    return map[piece] ? basePath + map[piece] : '';
 }
-
 function handleSquareClick(r, c) {
     if (!gameActive || isAnimating || turn !== playerColor) return;
 

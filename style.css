@@ -154,7 +154,7 @@ body {
 }
 
 /* Perfect Viewport-Friendly Board (480px = 8 x 60px) */
-.chessboard {
+#chessboard, #board, .chessboard {
     display: grid;
     grid-template-columns: repeat(8, 60px);
     grid-template-rows: repeat(8, 60px);
@@ -394,7 +394,7 @@ body {
         width: 384px;
     }
 
-    .chessboard {
+    #chessboard, #board, .chessboard {
         grid-template-columns: repeat(8, 48px);
         grid-template-rows: repeat(8, 48px);
         width: 384px;
