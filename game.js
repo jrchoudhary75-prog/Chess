@@ -23,6 +23,22 @@ let lastPlayerMoveTime = 0;
 let gameMode = 'bot'; // 'bot' or 'friend'
 let myRoomId = null;
 
+// Challenge System State
+let outgoingChallengeId = null;
+let incomingChallengeData = null;
+let challengeCountdownTimer = null;
+let challengeSecondsLeft = 30;
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function initStockfish() {
     try {
         stockfish = new Worker('stockfish.js'); 
@@ -58,33 +74,29 @@ function initStockfish() {
 window.onload = function() {
     initStockfish();
     setupUI();
-};
-// game_3.js ke andar ye code add karein
-window.startBotGame = function() {
-    console.log("Bot Game Started!");
-    
-    // Lobby ko hide karo aur Game Board ko show karo
-    document.querySelector('.lobby-grid').classList.add('hidden');
-    document.getElementById('game-container').classList.remove('hidden');
-    
-    // Yahan par aapka chess board load karne ka function call hoga
-    // Agar aapka board setup karne ka koi function hai (jaise initGame ya drawBoard), toh usko yahan call karein.
-};
-function setupUI() {
-    let openModalBtn = document.getElementById('openModalBtn');
-    if (openModalBtn) {
-        openModalBtn.onclick = () => {
-            let modal = document.getElementById('ratingModal');
-            if (modal) modal.style.display = 'flex';
-        };
-    }
 
+    // Check if user is already saved in localStorage
+    const savedUser = localStorage.getItem('chessUser');
+    if (savedUser) {
+        try {
+            const user = JSON.parse(savedUser);
+            window.currentUser = user;
+            if (window.showMainApp) {
+                window.showMainApp(user);
+            }
+        } catch(e) {}
+    }
+};
+
+function setupUI() {
     document.querySelectorAll('.rating-btn').forEach(btn => {
         btn.onclick = function() {
+            document.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
             selectedBotRating = parseInt(this.getAttribute('data-rating')) || 1600;
             gameMode = 'bot';
+            myRoomId = null;
             
-            // Set Player Color according to choice
             if (chosenColorChoice === 'random') {
                 playerColor = Math.random() < 0.5 ? 'white' : 'black';
             } else {
@@ -92,79 +104,94 @@ function setupUI() {
             }
 
             let modal = document.getElementById('ratingModal');
-            if (modal) modal.style.display = 'none';
+            if (modal) modal.classList.add('hidden');
 
-            let startSc = document.getElementById('startScreen');
-            if (startSc) startSc.style.display = 'none';
-
-            let gameSc = document.getElementById('gameScreen');
-            if (gameSc) gameSc.style.display = 'flex';
-
-            let lobbyGrid = document.querySelector('.lobby-grid');
-            if (lobbyGrid) lobbyGrid.classList.add('hidden');
+            let lobbyEl = document.getElementById('lobby-section');
+            if (lobbyEl) lobbyEl.classList.add('hidden');
 
             let gameContainer = document.getElementById('game-container');
             if (gameContainer) gameContainer.classList.remove('hidden');
             
             let botBadge = document.getElementById('botRatingBadge');
-            if (botBadge) botBadge.innerText = selectedBotRating;
+            if (botBadge) botBadge.innerText = `Elo ${selectedBotRating}`;
 
             let oppName = document.getElementById('opponentNameText');
             if (oppName) oppName.innerText = `Stockfish Bot (${selectedBotRating})`;
+
+            let oppAvatar = document.getElementById('hud-opponent-avatar');
+            if (oppAvatar) oppAvatar.src = "https://api.dicebear.com/7.x/bottts/svg?seed=Bot";
+
+            // Enable Hint & Undo in bot mode
+            const hintBtn = document.getElementById('btn-hint');
+            const undoBtn = document.getElementById('btn-undo');
+            if (hintBtn) { hintBtn.disabled = false; hintBtn.style.opacity = '1'; }
+            if (undoBtn) { undoBtn.disabled = false; undoBtn.style.opacity = '1'; }
 
             startGame();
         };
     });
 }
 
-function setChosenColor(color) {
+window.setChosenColor = function(color) {
     chosenColorChoice = color;
     document.querySelectorAll('.color-choice-btn').forEach(btn => {
-        btn.style.border = (btn.getAttribute('data-color') === color) ? '2px solid #629924' : 'none';
+        btn.style.borderColor = (btn.getAttribute('data-color') === color) ? 'var(--green-primary)' : 'transparent';
     });
-}
+};
 
-function closeModal() {
+window.closeModal = function() {
     let modal = document.getElementById('ratingModal');
-    if (modal) modal.style.display = 'none';
-}
+    if (modal) modal.classList.add('hidden');
+};
 
-function playAgain() {
+window.playAgain = function() {
     let goModal = document.getElementById('gameOverModal');
-    if (goModal) goModal.style.display = 'none';
+    if (goModal) goModal.classList.add('hidden');
     startGame();
-}
+};
 
-function goHome() {
+window.goHome = function() {
+    gameActive = false;
+    if (gameMode === 'friend' && socket && myRoomId) {
+        socket.emit('leave-game', { roomId: myRoomId });
+        myRoomId = null;
+    }
+
     let goModal = document.getElementById('gameOverModal');
-    if (goModal) goModal.style.display = 'none';
-    let gameScreen = document.getElementById('gameScreen');
-    if (gameScreen) gameScreen.style.display = 'none';
-    let startScreen = document.getElementById('startScreen');
-    if (startScreen) startScreen.style.display = 'flex';
+    if (goModal) goModal.classList.add('hidden');
+    
     let gameContainer = document.getElementById('game-container');
     if (gameContainer) gameContainer.classList.add('hidden');
-    let lobbyGrid = document.querySelector('.lobby-grid');
-    if (lobbyGrid) lobbyGrid.classList.remove('hidden');
-}
+    
+    let lobbyEl = document.getElementById('lobby-section');
+    if (lobbyEl) lobbyEl.classList.remove('hidden');
 
-function startBotGame() {
+    // Re-enable hint and undo for future bot games
+    const hintBtn = document.getElementById('btn-hint');
+    const undoBtn = document.getElementById('btn-undo');
+    if (hintBtn) { hintBtn.disabled = false; hintBtn.style.opacity = '1'; }
+    if (undoBtn) { undoBtn.disabled = false; undoBtn.style.opacity = '1'; }
+
+    if (socket) {
+        socket.emit('get-online-players');
+    }
+};
+
+window.startBotGame = function() {
     let modal = document.getElementById('ratingModal');
     if (modal) {
-        modal.style.display = 'flex';
-    } else {
-        gameMode = 'bot';
-        let lobbyGrid = document.querySelector('.lobby-grid');
-        if (lobbyGrid) lobbyGrid.classList.add('hidden');
-        let gameContainer = document.getElementById('game-container');
-        if (gameContainer) gameContainer.classList.remove('hidden');
-        startGame();
+        modal.classList.remove('hidden');
     }
-}
+};
 
-function backToLobby() {
+window.backToLobby = function() {
+    if (gameActive && gameMode === 'friend') {
+        if (!confirm("Are you sure you want to leave this live match and return to the lobby?")) {
+            return;
+        }
+    }
     goHome();
-}
+};
 
 function startGame() {
     board = [
@@ -228,7 +255,13 @@ function renderBoard() {
     
     let statusText = document.getElementById('statusText') || document.getElementById('game-status');
     if (statusText) {
-        statusText.innerText = `Turn: ${turn.charAt(0).toUpperCase() + turn.slice(1)}`;
+        let isMyTurn = (turn === playerColor);
+        let turnStr = turn.charAt(0).toUpperCase() + turn.slice(1);
+        if (gameMode === 'friend') {
+            statusText.innerText = isMyTurn ? `Your Turn (${turnStr})` : `Opponent Turn (${turnStr})`;
+        } else {
+            statusText.innerText = `Turn: ${turnStr}`;
+        }
     }
 
     let displayBoard = board;
@@ -279,14 +312,14 @@ function renderBoard() {
 }
 
 function getPieceImage(piece) {
-    // Apne folder ke hisab se path set karein (e.g., '/assets/' ya '/images/')
-    const basePath = '/public/'; 
+    const basePath = '/public/';
     let map = {
         'P': 'wp.svg', 'N': 'wn.svg', 'B': 'wb.svg', 'R': 'wr.svg', 'Q': 'wq.svg', 'K': 'wk.svg',
         'p': 'bp.svg', 'n': 'bn.svg', 'b': 'bb.svg', 'r': 'br.svg', 'q': 'bq.svg', 'k': 'bk.svg'
     };
     return map[piece] ? basePath + map[piece] : '';
 }
+
 function handleSquareClick(r, c) {
     if (!gameActive || isAnimating || turn !== playerColor) return;
 
@@ -335,7 +368,6 @@ function animateAndMakeMove(sr, sc, tr, tc, callback, isLocal = true) {
     let boardEl = document.getElementById('chessboard') || document.getElementById('board');
     let piece = board[sr][sc];
     let targetPiece = board[tr][tc];
-    let isCastling = (piece.toLowerCase() === 'k' && Math.abs(tc - sc) === 2);
 
     playSound(targetPiece ? 'capture' : 'move');
 
@@ -344,7 +376,6 @@ function animateAndMakeMove(sr, sc, tr, tc, callback, isLocal = true) {
     historyLog.push(moveStr);
     updateMoveHistoryDisplay();
 
-    // Send move to server in friend mode
     if (gameMode === 'friend' && isLocal && myRoomId && socket) {
         socket.emit('make-move', { roomId: myRoomId, move: { sr, sc, tr, tc } });
     }
@@ -404,7 +435,7 @@ function executeMoveLogic(sr, sc, tr, tc) {
     saveState();
     let piece = board[sr][sc];
 
-    if (piece.toLowerCase() === 'k' && Math.abs(tc - sc) === 2) {
+    if (piece && piece.toLowerCase() === 'k' && Math.abs(tc - sc) === 2) {
         if (tc === 6) {
             board[tr][5] = board[tr][7];
             board[tr][7] = '';
@@ -414,11 +445,11 @@ function executeMoveLogic(sr, sc, tr, tc) {
         }
     }
 
-    if (piece.toLowerCase() === 'p' && enPassantSquare && tr === enPassantSquare.row && tc === enPassantSquare.col) {
+    if (piece && piece.toLowerCase() === 'p' && enPassantSquare && tr === enPassantSquare.row && tc === enPassantSquare.col) {
         board[sr][tc] = '';
     }
 
-    if (piece.toLowerCase() === 'p' && Math.abs(tr - sr) === 2) {
+    if (piece && piece.toLowerCase() === 'p' && Math.abs(tr - sr) === 2) {
         enPassantSquare = { row: (sr + tr) / 2, col: sc };
     } else {
         enPassantSquare = null;
@@ -449,17 +480,17 @@ function updateMoveHistoryDisplay() {
         let whiteMove = historyLog[i] || '';
         let blackMove = historyLog[i + 1] || '';
         let div = document.createElement('div');
-        div.style.padding = '4px 0';
+        div.style.padding = '3px 0';
         div.innerText = `${moveNum}. ${whiteMove}   ${blackMove}`;
         listEl.appendChild(div);
     }
     listEl.scrollTop = listEl.scrollHeight;
 }
 
-function undoMove() {
+window.undoMove = function() {
     if (moveHistory.length === 0 || !gameActive) return;
     if (gameMode === 'friend') {
-        alert('Undo is disabled in multiplayer mode');
+        alert('Undo is disabled in multiplayer mode.');
         return;
     }
     
@@ -481,13 +512,18 @@ function undoMove() {
     hintSquare = null;
     updateMoveHistoryDisplay();
     renderBoard();
-}
+};
 
-function resignGame() {
+window.resignGame = function() {
     if (!gameActive) return;
-    gameActive = false;
-    showGameOverModal("Resignation", `You resigned. Opponent wins the match!`);
-}
+    if (confirm("Are you sure you want to resign this match?")) {
+        gameActive = false;
+        if (gameMode === 'friend' && socket && myRoomId) {
+            socket.emit('resign-game', { roomId: myRoomId });
+        }
+        showGameOverModal("Resignation", `You resigned. Opponent wins the match!`);
+    }
+};
 
 function showGameOverModal(title, message) {
     let titleEl = document.getElementById('gameOverTitle');
@@ -496,19 +532,23 @@ function showGameOverModal(title, message) {
     if (titleEl) titleEl.innerText = title;
     if (msgEl) msgEl.innerText = message;
     if (modalEl) {
-        modalEl.style.display = 'flex';
+        modalEl.classList.remove('hidden');
     } else {
         alert(`${title}: ${message}`);
     }
 }
 
-function requestHint() {
+window.requestHint = function() {
+    if (gameMode === 'friend') {
+        alert("Hints are disabled in multiplayer matches.");
+        return;
+    }
     if (!stockfish || !gameActive || turn !== playerColor) return;
     isHintActive = true;
     let fen = getFen();
     stockfish.postMessage('position fen ' + fen);
     stockfish.postMessage('go movetime 400');
-}
+};
 
 function showHintMove(bestMoveStr) {
     let sc = bestMoveStr.charCodeAt(0) - 97;
@@ -542,7 +582,6 @@ function triggerFallbackBotMove() {
     }
 }
 
-// FIXED: Fast movetime based calculation so 1600 & 2100 Elo never freeze
 function triggerBotMove() {
     if (!gameActive || gameMode !== 'bot') return;
     
@@ -585,14 +624,6 @@ function executeEngineMove(bestMoveStr) {
     animateAndMakeMove(sr, sc, tr, tc, function() {
         checkGameEndConditions();
     }, false);
-}
-
-function startChessGame() {
-  let lobbyGrid = document.querySelector('.lobby-grid');
-  if (lobbyGrid) lobbyGrid.classList.add('hidden');
-  let gameContainer = document.getElementById('game-container');
-  if (gameContainer) gameContainer.classList.remove('hidden');
-  startGame();
 }
 
 function checkGameEndConditions() {
@@ -822,14 +853,153 @@ function hasAnyLegalMoves(color) {
     return false;
 }
 
-// Online Private Room Logic
-function createPrivateGame() {
+// -------------------------------------------------------------
+// MULTIPLAYER & ONLINE SEARCH/INVITE SYSTEM
+// -------------------------------------------------------------
+
+// Register user with backend
+window.registerUserWithSocket = function(user) {
+    if (socket && user) {
+        socket.emit('register-user', {
+            userId: user.googleId || user.userId,
+            name: user.name,
+            profilePic: user.profilePic || '',
+            rating: user.rating || 1200
+        });
+        socket.emit('get-online-players');
+    }
+};
+
+// Render online players list in UI
+function renderOnlinePlayers(players) {
+    const listEl = document.getElementById('onlinePlayersList');
+    const countEl = document.getElementById('onlineCount');
+    if (!listEl) return;
+    
+    const myId = window.currentUser ? (window.currentUser.googleId || window.currentUser.userId) : null;
+    
+    // Filter out yourself
+    const others = (players || []).filter(p => {
+        if (socket && p.socketId === socket.id) return false;
+        if (myId && p.userId === myId) return false;
+        return true;
+    });
+
+    if (countEl) countEl.innerText = others.length;
+
+    if (others.length === 0) {
+        listEl.innerHTML = `
+            <div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                No other players online right now.<br>
+                <span style="font-size: 0.75rem; color: #888;">Open another tab or device to challenge friends!</span>
+            </div>
+        `;
+        return;
+    }
+
+    listEl.innerHTML = others.map(p => {
+        const avatar = p.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(p.name)}`;
+        const isBusy = p.inGame;
+        return `
+            <div class="player-item">
+                <div class="player-meta">
+                    <img src="${avatar}" class="player-avatar-small" alt="${escapeHtml(p.name)}">
+                    <div>
+                        <div class="player-name-text">${escapeHtml(p.name)}</div>
+                        <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
+                            <span class="player-status-badge ${isBusy ? 'badge-ingame' : 'badge-online'}">
+                                ${isBusy ? 'In Match' : 'Online'}
+                            </span>
+                            <span style="font-size:0.75rem; color:#888;">Elo ${p.rating || 1200}</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-challenge" ${isBusy ? 'disabled' : ''} onclick="challengePlayer('${p.socketId}', '${escapeHtml(p.name)}')">
+                    ${isBusy ? 'In Game' : '⚔️ Invite'}
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
+// Live Search & Filter
+let searchDebounce = null;
+window.onFriendSearchInput = function() {
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(() => {
+        searchFriend();
+    }, 250);
+};
+
+window.searchFriend = function() {
+    const input = document.getElementById('friend-search-input');
+    const query = input ? input.value.trim() : '';
+    if (socket) {
+        socket.emit('search-players', { query });
+    }
+};
+
+window.refreshOnlinePlayers = function() {
+    const input = document.getElementById('friend-search-input');
+    if (input) input.value = '';
+    if (socket) {
+        socket.emit('get-online-players');
+    }
+};
+
+// Challenge Action: Invite another player
+window.challengePlayer = function(targetSocketId, targetName) {
+    if (!socket) return alert("Not connected to game server! Make sure server is running.");
+    outgoingChallengeId = null;
+    socket.emit('send-challenge', { targetSocketId });
+};
+
+// Cancel sent challenge
+window.cancelOutgoingChallenge = function() {
+    if (socket && outgoingChallengeId) {
+        socket.emit('cancel-challenge', { challengeId: outgoingChallengeId });
+    }
+    outgoingChallengeId = null;
+    const modal = document.getElementById('waitingChallengeModal');
+    if (modal) modal.classList.add('hidden');
+};
+
+// Challenge Modal: Accept Incoming
+window.acceptIncomingChallenge = function() {
+    if (challengeCountdownTimer) clearInterval(challengeCountdownTimer);
+    if (incomingChallengeData && socket) {
+        socket.emit('respond-challenge', {
+            challengeId: incomingChallengeData.challengeId,
+            accept: true
+        });
+    }
+    const modal = document.getElementById('incomingChallengeModal');
+    if (modal) modal.classList.add('hidden');
+    incomingChallengeData = null;
+};
+
+// Challenge Modal: Decline Incoming
+window.declineIncomingChallenge = function() {
+    if (challengeCountdownTimer) clearInterval(challengeCountdownTimer);
+    if (incomingChallengeData && socket) {
+        socket.emit('respond-challenge', {
+            challengeId: incomingChallengeData.challengeId,
+            accept: false
+        });
+    }
+    const modal = document.getElementById('incomingChallengeModal');
+    if (modal) modal.classList.add('hidden');
+    incomingChallengeData = null;
+};
+
+// Private Room by Code (Fallback)
+window.createPrivateGame = function() {
     if (!socket) return alert('Server Connection Lost! Run node server.js');
     gameMode = 'friend';
     socket.emit('create-room');
-}
+};
 
-function joinPrivateGame() {
+window.joinPrivateGame = function() {
     if (!socket) return alert('Server Connection Lost! Run node server.js');
     let codeInput = document.getElementById('roomCodeInput');
     let code = codeInput ? codeInput.value.trim().toUpperCase() : '';
@@ -837,9 +1007,101 @@ function joinPrivateGame() {
     
     gameMode = 'friend';
     socket.emit('join-room', code);
-}
+};
 
+// Socket.io Event Listeners
 if (socket) {
+    socket.on('connect', () => {
+        console.log('Connected to Chess Server:', socket.id);
+        if (window.currentUser) {
+            window.registerUserWithSocket(window.currentUser);
+        }
+    });
+
+    // Update list of online players
+    socket.on('online-users-updated', (players) => {
+        renderOnlinePlayers(players);
+    });
+
+    socket.on('search-results', (players) => {
+        renderOnlinePlayers(players);
+    });
+
+    // Challenge sent confirmation
+    socket.on('challenge-sent', (data) => {
+        outgoingChallengeId = data.challengeId;
+        const targetNameEl = document.getElementById('waitingTargetName');
+        if (targetNameEl) targetNameEl.innerText = data.toName;
+        const modal = document.getElementById('waitingChallengeModal');
+        if (modal) modal.classList.remove('hidden');
+    });
+
+    // Incoming challenge
+    socket.on('receive-challenge', (data) => {
+        incomingChallengeData = data;
+        const modal = document.getElementById('incomingChallengeModal');
+        const nameEl = document.getElementById('challengerName');
+        const avatarEl = document.getElementById('challengerAvatar');
+        const secEl = document.getElementById('challengeSeconds');
+        
+        if (nameEl) nameEl.innerText = data.fromName;
+        if (avatarEl) avatarEl.src = data.fromAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(data.fromName)}`;
+        
+        challengeSecondsLeft = 30;
+        if (secEl) secEl.innerText = challengeSecondsLeft;
+        
+        if (challengeCountdownTimer) clearInterval(challengeCountdownTimer);
+        challengeCountdownTimer = setInterval(() => {
+            challengeSecondsLeft--;
+            if (secEl) secEl.innerText = challengeSecondsLeft;
+            if (challengeSecondsLeft <= 0) {
+                clearInterval(challengeCountdownTimer);
+                window.declineIncomingChallenge();
+            }
+        }, 1000);
+
+        if (modal) modal.classList.remove('hidden');
+    });
+
+    // Challenge declined
+    socket.on('challenge-declined', (data) => {
+        outgoingChallengeId = null;
+        const modal = document.getElementById('waitingChallengeModal');
+        if (modal) modal.classList.add('hidden');
+        alert(`${data.byName} declined your challenge.`);
+    });
+
+    // Challenge timeout
+    socket.on('challenge-timeout', (data) => {
+        outgoingChallengeId = null;
+        const modal = document.getElementById('waitingChallengeModal');
+        if (modal) modal.classList.add('hidden');
+        alert(data.message || 'Challenge timed out.');
+    });
+
+    socket.on('challenge-expired', () => {
+        if (challengeCountdownTimer) clearInterval(challengeCountdownTimer);
+        const modal = document.getElementById('incomingChallengeModal');
+        if (modal) modal.classList.add('hidden');
+        incomingChallengeData = null;
+    });
+
+    socket.on('challenge-cancelled', () => {
+        if (challengeCountdownTimer) clearInterval(challengeCountdownTimer);
+        const modal = document.getElementById('incomingChallengeModal');
+        if (modal) modal.classList.add('hidden');
+        incomingChallengeData = null;
+        alert("The match challenge was cancelled by the sender.");
+    });
+
+    socket.on('challenge-error', (msg) => {
+        outgoingChallengeId = null;
+        const modal = document.getElementById('waitingChallengeModal');
+        if (modal) modal.classList.add('hidden');
+        alert(msg);
+    });
+
+    // Room created by code
     socket.on('room-created', (data) => {
         playerColor = data.color;
         myRoomId = data.roomId;
@@ -847,63 +1109,72 @@ if (socket) {
         if (statusText) statusText.innerText = `Room Code: ${myRoomId} (Share this with friend)`;
     });
 
+    // Game Start (Both from Challenge & Room Code)
     socket.on('game-start', (data) => {
+        if (challengeCountdownTimer) clearInterval(challengeCountdownTimer);
+        const inModal = document.getElementById('incomingChallengeModal');
+        if (inModal) inModal.classList.add('hidden');
+        const outModal = document.getElementById('waitingChallengeModal');
+        if (outModal) outModal.classList.add('hidden');
+
         myRoomId = data.roomId;
         gameMode = 'friend';
         playerColor = data.color;
         
+        const opp = data.opponent || { name: 'Friend (Online)', avatar: '', rating: 1200 };
+        
         let oppName = document.getElementById('opponentNameText');
-        if (oppName) oppName.innerText = "Friend (Online)";
+        if (oppName) oppName.innerText = opp.name;
 
-        let startScreen = document.getElementById('startScreen');
-        let gameScreen = document.getElementById('gameScreen');
-        if (startScreen) startScreen.style.display = 'none';
-        if (gameScreen) gameScreen.style.display = 'flex';
+        let oppAvatar = document.getElementById('hud-opponent-avatar');
+        if (oppAvatar) {
+            oppAvatar.src = opp.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(opp.name)}`;
+        }
+
+        let oppBadge = document.getElementById('botRatingBadge');
+        if (oppBadge) oppBadge.innerText = opp.rating ? `Elo ${opp.rating}` : 'Online';
+
+        // Disable Hint & Undo in multiplayer mode
+        const hintBtn = document.getElementById('btn-hint');
+        const undoBtn = document.getElementById('btn-undo');
+        if (hintBtn) { hintBtn.disabled = true; hintBtn.style.opacity = '0.4'; }
+        if (undoBtn) { undoBtn.disabled = true; undoBtn.style.opacity = '0.4'; }
+
+        // Switch to Game Screen
+        let lobbyEl = document.getElementById('lobby-section');
+        if (lobbyEl) lobbyEl.classList.add('hidden');
+
+        let gameContainer = document.getElementById('game-container');
+        if (gameContainer) gameContainer.classList.remove('hidden');
         
         startGame();
     });
 
+    // Opponent made a move
     socket.on('opp-move', (moveData) => {
         animateAndMakeMove(moveData.sr, moveData.sc, moveData.tr, moveData.tc, function() {
             checkGameEndConditions();
         }, false);
     });
 
+    // Opponent resigned
+    socket.on('opponent-resigned', () => {
+        gameActive = false;
+        showGameOverModal("Victory!", "Your opponent has resigned. You won the match! 🏆");
+    });
+
+    // Opponent disconnected or left
+    socket.on('opponent-disconnected', () => {
+        gameActive = false;
+        showGameOverModal("Match Concluded", "Your opponent disconnected from the game.");
+    });
+
+    socket.on('opponent-left', () => {
+        gameActive = false;
+        showGameOverModal("Match Concluded", "Your opponent returned to the lobby.");
+    });
+
     socket.on('room-error', (err) => {
         alert(err);
     });
 }
-// === UI Navigation & Game Load Functions ===
-
-// 1. Bot ke sath game start karne ka function
-window.startBotGame = function() {
-    console.log("Play with Bot clicked! Loading game...");
-    
-    // Lobby wale hisse ko hide karo
-    const lobby = document.querySelector('.lobby-grid');
-    if (lobby) lobby.style.display = 'none';
-    
-    // Game Board wale hisse ko show karo
-    const gameContainer = document.getElementById('game-container');
-    if (gameContainer) {
-        gameContainer.classList.remove('hidden');
-        gameContainer.style.display = 'block';
-    }
-    
-    // Agar aapka chess board pehle se load nahi hua hai, toh usko yahan start/reset karein.
-    // U उदाहरण ke liye, agar aapka reset function 'resetGame()' hai toh usko call karein:
-    // resetGame(); 
-};
-
-// 2. Wapas Lobby mein aane ka function (Back button ke liye)
-window.backToLobby = function() {
-    // Game board ko hide karo
-    const gameContainer = document.getElementById('game-container');
-    if (gameContainer) {
-        gameContainer.style.display = 'none';
-    }
-    
-    // Lobby ko wapas show karo
-    const lobby = document.querySelector('.lobby-grid');
-    if (lobby) lobby.style.display = 'grid'; 
-};

@@ -2,38 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chess Arena</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Chess Arena - Multiplayer & AI</title>
+  <link rel="icon" href="data:,">
   
-  <!-- CSS Links -->
+  <!-- CSS Link -->
   <link rel="stylesheet" href="style.css">
-  
-  <style>
-    /* Auth & Lobby Custom Styles */
-    .hidden { display: none !important; }
-    
-    #auth-screen { position: fixed; inset: 0; background: #121212; display: flex; align-items: center; justify-content: center; z-index: 9999; }
-    .auth-card { background: #262421; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.6); max-width: 400px; width: 90%; }
-    .btn-google { padding: 12px 24px; background: #4285F4; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
-    .btn-google:hover { background: #3367d6; }
-
-    .navbar { display: flex; justify-content: space-between; align-items: center; background: #262421; padding: 12px 24px; border-bottom: 1px solid #363431; }
-    .profile-info { display: flex; align-items: center; gap: 12px; }
-    .avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #81b64c; object-fit: cover; }
-    .username { color: white; font-weight: 600; font-size: 16px; }
-    
-    .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
-    .lobby-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-    .card { background: #262421; border-radius: 10px; padding: 24px; border: 1px solid #363431; }
-    .card h2 { color: white; margin-bottom: 12px; font-size: 20px; }
-    .card p { font-size: 14px; margin-bottom: 20px; color: #a0a0a0; }
-    
-    .btn-action { width: 100%; padding: 12px; background: #81b64c; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-    .btn-action:hover { background: #a3d168; }
-
-    .search-box { display: flex; gap: 8px; margin-top: 15px; }
-    .search-input { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #403d39; background: #1a1917; color: white; outline: none; }
-  </style>
 
   <!-- Firebase Integration -->
   <script type="module">
@@ -49,39 +23,93 @@
       appId: "1:735495318337:web:0b1a3141c5b9d33b448fc0"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
+    let auth = null;
+    let provider = null;
+    try {
+      const app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      provider = new GoogleAuthProvider();
+    } catch(err) {
+      console.warn("Firebase Auth init notice:", err);
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
       const savedUser = localStorage.getItem('chessUser');
       if (savedUser) {
-        showMainApp(JSON.parse(savedUser));
+        try {
+          window.currentUser = JSON.parse(savedUser);
+          showMainApp(window.currentUser);
+        } catch(e) {
+          localStorage.removeItem('chessUser');
+        }
       }
     });
 
-    function showMainApp(user) {
-      document.getElementById('auth-screen').classList.add('hidden');
-      document.getElementById('main-app').classList.remove('hidden');
-      document.getElementById('user-avatar').src = user.profilePic || 'https://via.placeholder.com/40';
-      document.getElementById('user-display-name').innerText = user.name;
-    }
-
     window.loginWithGoogle = async function() {
+      if (!auth || !provider) {
+        alert("Google Auth is not configured for this domain. Please use Guest Login below.");
+        return;
+      }
       try {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
         const dbUser = {
             googleId: user.uid,
-            name: user.displayName,
-            email: user.email,
-            profilePic: user.photoURL
+            name: user.displayName || 'Player',
+            email: user.email || '',
+            profilePic: user.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(user.displayName || 'Player')}`,
+            rating: 1200
         };
         localStorage.setItem('chessUser', JSON.stringify(dbUser));
+        window.currentUser = dbUser;
         showMainApp(dbUser);
       } catch (error) {
         console.error("Login Error:", error);
-        alert("Login failed: " + error.message);
+        alert("Google Login notice: " + error.message + "\nTip: You can use the Quick Guest Login below!");
+      }
+    };
+
+    window.loginAsGuest = function() {
+      const input = document.getElementById('guest-name-input');
+      const name = (input ? input.value : '').trim();
+      if (!name) {
+        alert("Please enter a username to continue!");
+        return;
+      }
+      const guestId = 'guest_' + Math.random().toString(36).substring(2, 9);
+      const guestUser = {
+        googleId: guestId,
+        userId: guestId,
+        name: name,
+        email: '',
+        profilePic: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`,
+        rating: 1200,
+        isGuest: true
+      };
+      localStorage.setItem('chessUser', JSON.stringify(guestUser));
+      window.currentUser = guestUser;
+      showMainApp(guestUser);
+    };
+
+    window.showMainApp = function(user) {
+      document.getElementById('auth-screen').classList.add('hidden');
+      document.getElementById('main-app').classList.remove('hidden');
+      
+      const avatarEl = document.getElementById('user-avatar');
+      if (avatarEl) avatarEl.src = user.profilePic || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(user.name)}`;
+      
+      const nameEl = document.getElementById('user-display-name');
+      if (nameEl) nameEl.innerText = user.name;
+      
+      const hudNameEl = document.getElementById('hud-player-name');
+      if (hudNameEl) hudNameEl.innerText = user.name;
+      
+      const hudAvatarEl = document.getElementById('hud-player-avatar');
+      if (hudAvatarEl) hudAvatarEl.src = user.profilePic || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(user.name)}`;
+
+      // Register user with socket backend
+      if (window.registerUserWithSocket) {
+        window.registerUserWithSocket(user);
       }
     };
 
@@ -93,112 +121,234 @@
 </head>
 <body>
 
-  <!-- 1. Google Login Screen -->
+  <!-- 1. Authentication / Login Screen -->
   <div id="auth-screen">
     <div class="auth-card">
-      <h1 style="color: white; margin-bottom: 10px;">Chess Arena</h1>
-      <p style="margin-bottom: 20px;">Sign in to track stats and challenge friends</p>
-      <button onclick="loginWithGoogle()" class="btn-google">Sign in with Google</button>
+      <div style="font-size: 2.2rem; margin-bottom: 8px;">♟️</div>
+      <h1>Chess Arena</h1>
+      <p>Challenge friends online or train against Stockfish AI.</p>
+      
+      <!-- Google Sign In -->
+      <button onclick="loginWithGoogle()" class="btn-google">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+        Sign in with Google
+      </button>
+
+      <div class="auth-divider">
+        <span>OR QUICK PLAY</span>
+      </div>
+
+      <!-- Quick Guest Name Sign In -->
+      <div class="guest-login-box">
+        <input type="text" id="guest-name-input" class="search-input" placeholder="Enter your player name..." maxlength="15" onkeydown="if(event.key==='Enter') loginAsGuest()">
+        <button onclick="loginAsGuest()" class="btn-action">Play as Guest</button>
+      </div>
     </div>
   </div>
 
-  <!-- 2. Main App (Lobby + Game) -->
-  <div id="main-app" class="hidden">
+  <!-- 2. Main App (Navbar + Lobby + Game) -->
+  <div id="main-app" class="hidden" style="width: 100%;">
     
-    <!-- Navbar -->
-    <div class="navbar">
+    <!-- Top Navbar -->
+    <header class="navbar">
+      <div class="brand-title">
+        <span>♟️</span> Chess Arena
+      </div>
       <div class="profile-info">
+        <span class="online-dot" title="Online"></span>
         <img id="user-avatar" class="avatar" src="" alt="Profile">
         <span id="user-display-name" class="username">Player</span>
+        <button onclick="logoutUser()" class="btn-logout" title="Logout">Exit</button>
       </div>
-      <button onclick="logoutUser()" class="btn-action" style="width:auto; padding: 8px 16px; background:#e53935;">Logout</button>
-    </div>
+    </header>
 
     <!-- Lobby Section -->
-    <div class="container lobby-grid">
-      <!-- Play Bot -->
-      <div class="card">
-        <h2>Play vs Computer</h2>
-        <p>Practice tactics against AI.</p>
-        <button class="btn-action" onclick="startBotGame()">Play with Bot</button>
-      </div>
-
-      <!-- Play with Friend -->
-      <div class="card">
-        <h2>Play with Friend</h2>
-        <p>Search registered players by name to send a direct challenge.</p>
-        <div class="search-box">
-          <input type="text" id="friend-search-input" class="search-input" placeholder="Enter username...">
-          <button class="btn-action" style="width: auto; padding: 10px 16px;" onclick="searchFriend()">Search</button>
+    <main class="lobby-container" id="lobby-section">
+      <div class="lobby-grid">
+        
+        <!-- Card 1: Play vs AI Bot -->
+        <div class="card">
+          <h2>🤖 Play vs Computer</h2>
+          <p class="card-desc">Practice tactics and sharpen your skills against Stockfish AI with custom Elo difficulty.</p>
+          <button class="btn-action" onclick="startBotGame()">
+            <span>⚔️</span> Play with Bot
+          </button>
         </div>
-        <div id="search-results" style="margin-top: 15px;"></div>
-      </div>
-    </div>
 
-    <!-- 3. Lichess Style Game Area (Hidden in Lobby) -->
-    <div id="game-container" class="hidden" style="margin-top: 30px;">
-        <div class="game-container" style="justify-content: center;">
-            
-            <!-- Left Area: Board + Player HUDs -->
-            <div class="board-area">
-                <!-- Top Player HUD (Opponent) -->
-                <div class="player-hud" id="opponent-hud">
-                    <div class="player-info">
-                        <span class="dot-indicator bot-dot"></span>
-                        <span class="player-name" id="opponentNameText">Stockfish Bot</span>
-                        <span class="rating-tag" id="botRatingBadge">2100</span>
-                    </div>
-                </div>
+        <!-- Card 2: Play with Friend (Live Search & Online Players) -->
+        <div class="card">
+          <h2>👥 Play with Friends</h2>
+          <p class="card-desc">Search players online or challenge active players directly with a single tap.</p>
+          
+          <!-- Search Box -->
+          <div class="search-box">
+            <input type="text" id="friend-search-input" class="search-input" placeholder="Search player by name..." oninput="onFriendSearchInput()">
+            <button class="btn-action btn-secondary" style="width: auto; min-height: 42px; padding: 0 14px;" onclick="searchFriend()">Search</button>
+          </div>
 
-                <!-- Chessboard -->
-                <div id="board" class="chessboard"></div>
+          <!-- Active Players Header -->
+          <div class="player-list-header">
+            <span>Online Players (<span id="onlineCount">0</span>)</span>
+            <span style="font-size: 0.75rem; cursor: pointer; color: var(--green-primary);" onclick="refreshOnlinePlayers()">🔄 Refresh</span>
+          </div>
 
-                <!-- Bottom Player HUD (User) -->
-                <div class="player-hud" id="user-hud">
-                    <div class="player-info">
-                        <span class="dot-indicator player-dot"></span>
-                        <span class="player-name">You</span>
-                        <span class="rating-tag">1500</span>
-                    </div>
-                </div>
+          <!-- Scrollable Online Players List -->
+          <div id="onlinePlayersList" class="players-scroll-list">
+            <div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+              Searching for online players...
             </div>
+          </div>
 
-            <!-- Right Area: Sidebar Panel -->
-            <div class="sidebar">
-                <div class="sidebar-header">
-                    <h3>Game Arena</h3>
-                    <span class="status-badge" id="game-status">Turn: White</span>
-                </div>
-
-                <!-- Move Notation History -->
-                <div class="move-history-container">
-                    <div class="move-list" id="move-history">
-                        <!-- Moves will be appended here by game_3.js -->
-                    </div>
-                </div>
-
-                <!-- Action Controls -->
-                <div class="control-panel">
-                    <button onclick="requestHint()" class="action-btn" title="Get Hint">💡 Hint</button>
-                    <button onclick="undoMove()" class="action-btn" title="Takeback / Undo">⟲ Undo</button>
-                    <button onclick="resignGame()" class="action-btn danger-btn" title="Resign Game">🏳️ Resign</button>
-                    <button onclick="backToLobby()" class="action-btn" style="grid-column: span 2; background: #403d39;">🔙 Back to Lobby</button>
-                </div>
+          <!-- Room Code Fallback / Sharing -->
+          <div class="room-code-section">
+            <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600;">
+              OR SHARE PRIVATE ROOM CODE
             </div>
+            <div style="display: flex; gap: 8px;">
+              <button onclick="createPrivateGame()" class="btn-action btn-secondary" style="flex: 1; font-size: 0.8rem; padding: 8px;">Create Code</button>
+              <input type="text" id="roomCodeInput" placeholder="Code" class="search-input" style="flex: 1; text-transform: uppercase;">
+              <button onclick="joinPrivateGame()" class="btn-action" style="flex: 0.8; font-size: 0.8rem; padding: 8px;">Join</button>
+            </div>
+            <div id="roomStatusText" style="margin-top: 6px; color: var(--green-primary); font-size: 0.8rem; text-align: center;"></div>
+          </div>
+
         </div>
+
+      </div>
+    </main>
+
+    <!-- 3. Responsive Chess Arena Game Section -->
+    <div id="game-container" class="hidden">
+      <div class="game-layout">
+          
+          <!-- Board Area: Opponent HUD + Chessboard + User HUD -->
+          <div class="board-area">
+              
+              <!-- Top Opponent HUD -->
+              <div class="player-hud" id="opponent-hud">
+                  <div class="player-info">
+                      <img id="hud-opponent-avatar" class="player-hud-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Bot" alt="Opponent">
+                      <span class="player-name" id="opponentNameText">Stockfish Bot</span>
+                  </div>
+                  <span class="rating-tag" id="botRatingBadge">Elo 2100</span>
+              </div>
+
+              <!-- Responsive Chessboard -->
+              <div id="board" class="chessboard"></div>
+
+              <!-- Bottom User HUD -->
+              <div class="player-hud" id="user-hud">
+                  <div class="player-info">
+                      <img id="hud-player-avatar" class="player-hud-avatar" src="" alt="You">
+                      <span class="player-name" id="hud-player-name">You</span>
+                  </div>
+                  <span class="rating-tag" id="userRatingBadge">1200</span>
+              </div>
+
+          </div>
+
+          <!-- Sidebar / Mobile Controls Panel -->
+          <div class="sidebar">
+              <div class="sidebar-header">
+                  <h3>Game Arena</h3>
+                  <span class="status-badge" id="game-status">Turn: White</span>
+              </div>
+
+              <!-- Move Notation History -->
+              <div class="move-history-container">
+                  <div class="move-list" id="move-history">
+                      <!-- Moves logged by game.js -->
+                  </div>
+              </div>
+
+              <!-- Mobile Friendly Action Controls -->
+              <div class="control-panel">
+                  <button onclick="requestHint()" id="btn-hint" class="btn-ctrl" title="Get Hint">💡 Hint</button>
+                  <button onclick="undoMove()" id="btn-undo" class="btn-ctrl" title="Takeback">⟲ Undo</button>
+                  <button onclick="resignGame()" class="btn-ctrl danger" title="Resign Match">🏳️ Resign</button>
+                  <button onclick="backToLobby()" class="btn-ctrl" title="Return to Lobby">🔙 Lobby</button>
+              </div>
+          </div>
+
+      </div>
     </div>
 
   </div>
 
-  <script>
-    async function searchFriend() {
-      // Keep your existing searchFriend logic here
-      alert("Search functionality triggered!");
-    }
-  </script>
+  <!-- 4. MODALS -->
+
+  <!-- Incoming Challenge Modal -->
+  <div id="incomingChallengeModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <img id="challengerAvatar" class="challenge-avatar-pulse" src="" alt="Challenger">
+      <h2 id="challengerTitle">Match Challenge!</h2>
+      <p><strong id="challengerName">A Player</strong> wants to play a live chess game with you.</p>
+      <div id="challengeCountdown" style="font-size: 0.8rem; color: #bbb; margin-bottom: 12px;">Auto-declining in <span id="challengeSeconds">30</span>s</div>
+      <div class="modal-actions">
+        <button onclick="acceptIncomingChallenge()" class="btn-action" style="background: var(--green-primary);">Accept & Play</button>
+        <button onclick="declineIncomingChallenge()" class="btn-action btn-secondary" style="background: var(--red-danger); color: white;">Decline</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Outgoing Challenge Sent Modal (Waiting) -->
+  <div id="waitingChallengeModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div style="font-size: 2.2rem; margin-bottom: 10px;">⏳</div>
+      <h2>Challenge Sent</h2>
+      <p>Waiting for <strong id="waitingTargetName">Player</strong> to accept your challenge...</p>
+      <div style="display: flex; justify-content: center; margin: 12px 0;">
+        <div style="width: 24px; height: 24px; border: 3px solid #444; border-top-color: var(--green-primary); border-radius: 50%; animation: spin 1s infinite linear;"></div>
+      </div>
+      <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+      <button onclick="cancelOutgoingChallenge()" class="btn-action btn-secondary" style="margin-top: 10px;">Cancel Challenge</button>
+    </div>
+  </div>
+
+  <!-- Bot Elo & Color Selection Modal -->
+  <div id="ratingModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h2>Play vs Stockfish Bot</h2>
+      <p>Select AI Difficulty & Piece Color</p>
+      
+      <!-- Elo Selection -->
+      <div class="rating-grid">
+        <button class="rating-btn" data-rating="800">Beginner (800)</button>
+        <button class="rating-btn" data-rating="1200">Intermediate (1200)</button>
+        <button class="rating-btn" data-rating="1600">Advanced (1600)</button>
+        <button class="rating-btn active" data-rating="2100">Master (2100)</button>
+      </div>
+
+      <!-- Color Choice -->
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 0.8rem; margin-bottom: 8px; color: var(--text-secondary);">Choose Your Side:</div>
+        <div class="color-choice-row">
+          <button onclick="setChosenColor('white')" class="color-choice-btn" data-color="white" style="background: #fff; color: #222; border-color: var(--green-primary);">White</button>
+          <button onclick="setChosenColor('random')" class="color-choice-btn" data-color="random" style="background: #555; color: #fff;">Random</button>
+          <button onclick="setChosenColor('black')" class="color-choice-btn" data-color="black" style="background: #222; color: #fff;">Black</button>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button onclick="closeModal()" class="btn-action btn-secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over Modal Popup -->
+  <div id="gameOverModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h2 id="gameOverTitle" style="color: var(--green-primary);">Game Over</h2>
+      <p id="gameOverMessage"></p>
+      <div class="modal-actions">
+        <button onclick="playAgain()" class="btn-action">Play Again</button>
+        <button onclick="goHome()" class="btn-action btn-secondary">Main Menu</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Scripts -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
   <script src="game.js"></script>
 </body>
 </html>
